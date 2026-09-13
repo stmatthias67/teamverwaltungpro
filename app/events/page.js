@@ -3,12 +3,13 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { X } from 'lucide-react';
 
 export default function EventsPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     type: 'TRAINING',
@@ -18,6 +19,7 @@ export default function EventsPage() {
     distanceInfo: '',
     isAway: false,
   });
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     loadEvents();
@@ -26,8 +28,9 @@ export default function EventsPage() {
   async function loadEvents() {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetch('/api/events');
-      if (!res.ok) throw new Error('Failed to fetch events');
+      if (!res.ok) throw new Error('Events konnten nicht geladen werden');
       const data = await res.json();
       setEvents((data.data || []).sort((a, b) => new Date(a.date) - new Date(b.date)));
     } catch (err) {
@@ -37,8 +40,23 @@ export default function EventsPage() {
     }
   }
 
+  function validateForm() {
+    const errors = {};
+    if (!formData.title.trim()) errors.title = 'Titel erforderlich';
+    if (!formData.date) errors.date = 'Datum erforderlich';
+    if (!formData.location.trim()) errors.location = 'Ort erforderlich';
+    return errors;
+  }
+
   async function handleAddEvent(e) {
     e.preventDefault();
+    
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
     try {
       const res = await fetch('/api/events', {
         method: 'POST',
@@ -50,7 +68,11 @@ export default function EventsPage() {
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to create event');
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Event konnte nicht erstellt werden');
+      }
+
       setFormData({
         title: '',
         type: 'TRAINING',
@@ -60,142 +82,263 @@ export default function EventsPage() {
         distanceInfo: '',
         isAway: false,
       });
-      setShowForm(false);
-      loadEvents();
+      setFormErrors({});
+      setShowModal(false);
+      await loadEvents();
     } catch (err) {
-      alert('Fehler: ' + err.message);
+      setFormErrors({ submit: err.message });
     }
   }
 
-  const getTypeBadge = (type) => {
-    const colors = { MATCH: 'bg-red-900', TRAINING: 'bg-blue-900', TOURNAMENT: 'bg-purple-900' };
-    const labels = { MATCH: 'Spiel', TRAINING: 'Training', TOURNAMENT: 'Turnier' };
-    return <span className={`badge ${colors[type]} text-white`}>{labels[type]}</span>;
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+    if (formErrors[name]) {
+      setFormErrors(prev => {
+        const updated = { ...prev };
+        delete updated[name];
+        return updated;
+      });
+    }
   };
 
-  const formatDate = (date) => new Date(date).toLocaleDateString('de-DE', {
-    weekday: 'short',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+  const getTypeBadge = (type) => {
+    const badges = {
+      TRAINING: { bg: 'bg-blue-900', text: '🏃 Training' },
+      MATCH: { bg: 'bg-red-900', text: '⚽ Spiel' },
+      TOURNAMENT: { bg: 'bg-purple-900', text: '🏆 Turnier' },
+    };
+    return badges[type];
+  };
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('de-DE', {
+      weekday: 'short',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
+  const formatTime = (date) => {
+    return new Date(date).toLocaleTimeString('de-DE', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-4xl font-bold mb-2">⚽ Events & Termine</h1>
-        <p className="text-gray-400">Verwaltung von Training, Spielen und Turnieren</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-4xl font-bold text-white">⚽ Events</h1>
+          <p className="text-slate-400 mt-1">Training, Spiele und Turniere</p>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="btn btn-primary"
+        >
+          + Event erstellen
+        </button>
       </div>
 
-      <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
-        + Event hinzufügen
-      </button>
-
-      {showForm && (
-        <div className="card">
-          <h3 className="text-lg font-bold mb-4">Neues Event erstellen</h3>
-          <form onSubmit={handleAddEvent} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Titel"
-                required
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="input-field"
-              />
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                className="input-field"
-              >
-                <option value="TRAINING">Training</option>
-                <option value="MATCH">Spiel</option>
-                <option value="TOURNAMENT">Turnier</option>
-              </select>
-              <input
-                type="datetime-local"
-                required
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="input-field"
-              />
-              <input
-                type="datetime-local"
-                placeholder="Treffzeit"
-                value={formData.meetTime}
-                onChange={(e) => setFormData({ ...formData, meetTime: e.target.value })}
-                className="input-field"
-              />
-              <input
-                type="text"
-                placeholder="Ort"
-                required
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="input-field"
-              />
-              <input
-                type="text"
-                placeholder="Fahrstrecke (z.B. 8.6 km)"
-                value={formData.distanceInfo}
-                onChange={(e) => setFormData({ ...formData, distanceInfo: e.target.value })}
-                className="input-field"
-              />
-              <label className="flex items-center gap-2 col-span-2">
-                <input
-                  type="checkbox"
-                  checked={formData.isAway}
-                  onChange={(e) => setFormData({ ...formData, isAway: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <span>Auswärts</span>
-              </label>
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" className="btn btn-primary">
-                Erstellen
-              </button>
-              <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary">
-                Abbrechen
-              </button>
-            </div>
-          </form>
+      {/* Error Message */}
+      {error && (
+        <div className="p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-200">
+          ⚠ {error}
         </div>
       )}
 
+      {/* Loading */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-slate-700 border-t-green-500 rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-slate-700 border-t-primary rounded-full animate-spin"></div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {events.length === 0 ? (
-            <div className="card text-center text-gray-400">Keine Events vorhanden</div>
+            <div className="card text-center text-slate-400 py-12">
+              Keine Events vorhanden
+            </div>
           ) : (
-            events.map((event) => (
-              <Link key={event.id} href={`/events/${event.id}`} className="block hover:border-primary transition">
-                <div className="card">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-bold">{event.title}</h3>
-                        {getTypeBadge(event.type)}
-                        {event.isAway && <span className="badge bg-orange-900 text-white">Auswärts</span>}
+            events.map((event) => {
+              const badge = getTypeBadge(event.type);
+              const isUpcoming = new Date(event.date) > new Date();
+              
+              return (
+                <Link key={event.id} href={`/events/${event.id}`}>
+                  <div className={`card hover:border-primary cursor-pointer transition ${!isUpcoming ? 'opacity-60' : ''}`}>
+                    <div className="flex items-start gap-4">
+                      <div className="text-3xl">{event.type === 'TRAINING' ? '🏃' : event.type === 'MATCH' ? '⚽' : '🏆'}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-lg font-bold text-white">{event.title}</h3>
+                          <span className={`badge ${badge.bg} text-white text-xs px-2 py-1 rounded`}>
+                            {badge.text.split(' ')[1]}
+                          </span>
+                          {event.isAway && <span className="badge bg-orange-900 text-white text-xs px-2 py-1 rounded">Auswärts</span>}
+                          {!isUpcoming && <span className="text-xs text-slate-500">Vorbei</span>}
+                        </div>
+                        <div className="space-y-1 text-sm text-slate-300">
+                          <p>📅 {formatDate(event.date)} • 🕐 {formatTime(event.date)}</p>
+                          <p>📍 {event.location}</p>
+                          {event.distanceInfo && <p>🚗 {event.distanceInfo}</p>}
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-400">📅 {formatDate(event.date)}</p>
-                      <p className="text-sm text-gray-400">📍 {event.location}</p>
-                      {event.distanceInfo && <p className="text-sm text-gray-400">🚗 {event.distanceInfo}</p>}
+                      <div className="text-right text-sm text-slate-400">
+                        {isUpcoming ? 'Kommend' : 'Vorbei'}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))
+                </Link>
+              );
+            })
           )}
         </div>
       )}
 
-      {error && <div className="card bg-red-900 border-red-700 text-red-200">⚠️ {error}</div>}
+      {/* Modal */}
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-white">Event erstellen</h2>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setFormErrors({});
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddEvent} className="space-y-4">
+              {/* Titel */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Titel *</label>
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  placeholder="z.B. Training Montagsgruppe"
+                  className={formErrors.title ? 'border-red-500' : ''}
+                />
+                {formErrors.title && <p className="text-red-400 text-sm mt-1">{formErrors.title}</p>}
+              </div>
+
+              {/* Type */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Typ</label>
+                <select
+                  name="type"
+                  value={formData.type}
+                  onChange={handleInputChange}
+                >
+                  <option value="TRAINING">🏃 Training</option>
+                  <option value="MATCH">⚽ Spiel</option>
+                  <option value="TOURNAMENT">🏆 Turnier</option>
+                </select>
+              </div>
+
+              {/* Datum */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Datum *</label>
+                <input
+                  type="datetime-local"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  className={formErrors.date ? 'border-red-500' : ''}
+                />
+                {formErrors.date && <p className="text-red-400 text-sm mt-1">{formErrors.date}</p>}
+              </div>
+
+              {/* Treffzeit */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Treffzeit (optional)</label>
+                <input
+                  type="datetime-local"
+                  name="meetTime"
+                  value={formData.meetTime}
+                  onChange={handleInputChange}
+                  placeholder="Wann sollen sich alle treffen?"
+                />
+              </div>
+
+              {/* Ort */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Ort *</label>
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  placeholder="z.B. Schloßbergplatz"
+                  className={formErrors.location ? 'border-red-500' : ''}
+                />
+                {formErrors.location && <p className="text-red-400 text-sm mt-1">{formErrors.location}</p>}
+              </div>
+
+              {/* Fahrstrecke */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Fahrstrecke (optional)</label>
+                <input
+                  type="text"
+                  name="distanceInfo"
+                  value={formData.distanceInfo}
+                  onChange={handleInputChange}
+                  placeholder="z.B. 15.3 km / 20 Min"
+                />
+              </div>
+
+              {/* Auswärts */}
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  name="isAway"
+                  checked={formData.isAway}
+                  onChange={handleInputChange}
+                />
+                <span className="text-white text-sm">Auswärts</span>
+              </label>
+
+              {/* Submit Error */}
+              {formErrors.submit && (
+                <div className="p-3 bg-red-900/30 border border-red-700 rounded text-red-200 text-sm">
+                  {formErrors.submit}
+                </div>
+              )}
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    setFormErrors({});
+                  }}
+                  className="flex-1 btn btn-secondary"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 btn btn-primary"
+                >
+                  Event erstellen
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
