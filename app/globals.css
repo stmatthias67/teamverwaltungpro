@@ -1,20 +1,30 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 15, 23, 42;
-  --background-end-rgb: 30, 41, 59;
+  /* Theme Colors (gesetzt von Settings) */
+  --color-primary: #2ea043;
+  --color-secondary: #1f6feb;
+  --color-accent: #58a6ff;
+  --color-bg-main: #0d1117;
+  --color-bg-card: #161b22;
+  
+  --primary: var(--color-primary);
+  --secondary: var(--color-secondary);
+  --accent: var(--color-accent);
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-  min-height: 100vh;
+/* Dark Mode */
+.dark {
+  color-scheme: dark;
 }
+
+/* Light Mode */
+.light {
+  color-scheme: light;
+}
+
+/* Verwende die Variablen überall */
+.bg-primary { background-color: var(--color-primary); }
+.text-primary { color: var(--color-primary); }
+.border-primary { border-color: var(--color-primary); }
+
+.bg-card { background-color: var(--color-bg-card); }
+.bg-main { background-color: var(--color-bg-main); }
