@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export default function EventsPage() {
   const [events, setEvents] = useState([]);
@@ -173,20 +174,22 @@ export default function EventsPage() {
             <div className="card text-center text-gray-400">Keine Events vorhanden</div>
           ) : (
             events.map((event) => (
-              <div key={event.id} className="card">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-bold">{event.title}</h3>
-                      {getTypeBadge(event.type)}
-                      {event.isAway && <span className="badge bg-orange-900 text-white">Auswärts</span>}
+              <Link key={event.id} href={`/events/${event.id}`} className="block hover:border-primary transition">
+                <div className="card">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-bold">{event.title}</h3>
+                        {getTypeBadge(event.type)}
+                        {event.isAway && <span className="badge bg-orange-900 text-white">Auswärts</span>}
+                      </div>
+                      <p className="text-sm text-gray-400">📅 {formatDate(event.date)}</p>
+                      <p className="text-sm text-gray-400">📍 {event.location}</p>
+                      {event.distanceInfo && <p className="text-sm text-gray-400">🚗 {event.distanceInfo}</p>}
                     </div>
-                    <p className="text-sm text-gray-400">📅 {formatDate(event.date)}</p>
-                    <p className="text-sm text-gray-400">📍 {event.location}</p>
-                    {event.distanceInfo && <p className="text-sm text-gray-400">🚗 {event.distanceInfo}</p>}
                   </div>
                 </div>
-              </div>
+              </Link>
             ))
           )}
         </div>
