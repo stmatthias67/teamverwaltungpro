@@ -1,13 +1,23 @@
 // app/squad/page.js
 /**
- * Squad/Kader Page
- * Spielerverwaltung mit CRUD-Operationen
- * API: GET/POST /api/players, DELETE /api/players/[id]
+ * Squad/Kader Page - ÜBERARBEITETE VERSION
+ * Spielerverwaltung mit Modal-Form für Hinzufügen
+ * 
+ * Neue Felder:
+ * - firstName (Vorname)
+ * - lastName (Nachname)
+ * - parentName (Name des Elternteils)
+ * - parentPhone (Telefon)
+ * - parentWhatsapp (WhatsApp oder Username)
+ * 
+ * KEINE jerseyNumber mehr
+ * KEIN status mehr (wird pro-Event in Nomination gespeichert)
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 
 export default function SquadPage() {
   const [players, setPlayers] = useState([]);
@@ -15,14 +25,16 @@ export default function SquadPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [formData, setFormData] = useState({
-    jerseyNumber: '',
-    name: '',
-    status: 'ACTIVE',
+    firstName: '',
+    lastName: '',
+    parentName: '',
     parentPhone: '',
     parentWhatsapp: '',
   });
+  const [formErrors, setFormErrors] = useState({});
 
   // Load players on mount
   useEffect(() => {
@@ -31,9 +43,10 @@ export default function SquadPage() {
 
   // Filter players when search term changes
   useEffect(() => {
-    const filtered = players.filter((p) =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.jerseyNumber.toString().includes(searchTerm)
+    const filtered = players.filter(
+      (p) =>
+        `${p.firstName} ${p.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.parentName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredPlayers(filtered);
   }, [searchTerm, players]);
@@ -43,7 +56,7 @@ export default function SquadPage() {
       setLoading(true);
       setError(null);
       const res = await fetch('/api/players');
-      if (!res.ok) throw new Error('Failed to fetch players');
+      if (!res.ok) throw new Error('Spieler konnten nicht geladen werden');
       const data = await res.json();
       setPlayers(data.data || []);
     } catch (err) {
@@ -54,215 +67,375 @@ export default function SquadPage() {
     }
   }
 
+  function validateForm() {
+    const errors = {};
+    if (!formData.firstName.trim()) errors.firstName = 'Vorname ist erforderlich';
+    if (!formData.lastName.trim()) errors.lastName = 'Nachname ist erforderlich';
+    if (!formData.parentName?.trim()) errors.parentName = 'Elternname ist erforderlich';
+    if (!formData.parentPhone?.trim()) errors.parentPhone = 'Telefon ist erforderlich';
+    if (!formData.parentWhatsapp?.trim()) {
+      errors.parentWhatsapp = 'WhatsApp-Nummer oder Username erforderlich';
+    }
+    return errors;
+  }
+
   async function handleAddPlayer(e) {
     e.preventDefault();
+    
+    // Validate
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
     try {
       const res = await fetch('/api/players', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jerseyNumber: parseInt(formData.jerseyNumber),
-          name: formData.name,
-          status: formData.status,
-          parentPhone: formData.parentPhone || null,
-          parentWhatsapp: formData.parentWhatsapp || null,
-        }),
+        body: JSON.stringify(formData),
       });
 
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || 'Failed to create player');
+        const data = await res.json();
+        throw new Error(data.message || 'Spieler konnte nicht erstellt werden');
       }
 
-      setFormData({ jerseyNumber: '', name: '', status: 'ACTIVE', parentPhone: '', parentWhatsapp: '' });
-      setShowForm(false);
-      loadPlayers();
+      // Clear form and reload
+      setFormData({
+        firstName: '',
+        lastName: '',
+        parentName: '',
+        parentPhone: '',
+        parentWhatsapp: '',
+      });
+      setFormErrors({});
+      setShowModal(false);
+      await loadPlayers();
     } catch (err) {
-      alert('Fehler beim Hinzufügen: ' + err.message);
+      setFormErrors({ submit: err.message });
+      console.error('Error adding player:', err);
     }
   }
 
   async function handleDeletePlayer(playerId) {
-    if (!window.confirm('Spieler wirklich löschen?')) return;
-
     try {
       const res = await fetch(`/api/players/${playerId}`, {
         method: 'DELETE',
       });
 
-      if (!res.ok) throw new Error('Failed to delete player');
+      if (!res.ok) {
+        throw new Error('Spieler konnte nicht gelöscht werden');
+      }
 
-      loadPlayers();
+      await loadPlayers();
+      setDeleteConfirm(null);
     } catch (err) {
-      alert('Fehler beim Löschen: ' + err.message);
+      setError(err.message);
+      console.error('Error deleting player:', err);
     }
   }
 
-  const getStatusBadge = (status) => {
-    const colors = {
-      ACTIVE: 'badge-success',
-      SICK: 'badge-warning',
-      INJURED: 'badge-danger',
-    };
-    const labels = {
-      ACTIVE: 'Aktiv',
-      SICK: 'Krank',
-      INJURED: 'Verletzt',
-    };
-    return <span className={`badge ${colors[status] || 'badge'}`}>{labels[status] || status}</span>;
-  };
+  function handleInputChange(e) {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error for this field
+    if (formErrors[name]) {
+      setFormErrors((prev) => {
+        const updated = { ...prev };
+        delete updated[name];
+        return updated;
+      });
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-4xl font-bold mb-2">👥 Kader & Spielerverwaltung</h1>
-        <p className="text-gray-400">Verwalten Sie Ihre Spieler und Kontaktdaten</p>
-      </div>
-
-      {/* Search & Add Button */}
-      <div className="flex gap-4 flex-col sm:flex-row">
-        <input
-          type="text"
-          placeholder="Nach Name oder Nummer suchen..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="input-field flex-1"
-        />
-        <button onClick={() => setShowForm(!showForm)} className="btn btn-primary whitespace-nowrap">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-4xl font-bold text-white">Kader</h1>
+        <button
+          onClick={() => setShowModal(true)}
+          className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
+        >
           + Spieler hinzufügen
         </button>
       </div>
 
-      {/* Add Player Form */}
-      {showForm && (
-        <div className="card">
-          <h3 className="text-lg font-bold mb-4">Neuen Spieler hinzufügen</h3>
-          <form onSubmit={handleAddPlayer} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <input
-                type="number"
-                placeholder="Rückennummer"
-                required
-                value={formData.jerseyNumber}
-                onChange={(e) => setFormData({ ...formData, jerseyNumber: e.target.value })}
-                className="input-field"
-              />
-              <input
-                type="text"
-                placeholder="Name"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="input-field"
-              />
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="input-field"
-              >
-                <option value="ACTIVE">Aktiv</option>
-                <option value="SICK">Krank</option>
-                <option value="INJURED">Verletzt</option>
-              </select>
-              <input
-                type="tel"
-                placeholder="Telefon"
-                value={formData.parentPhone}
-                onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
-                className="input-field"
-              />
-              <input
-                type="tel"
-                placeholder="WhatsApp"
-                value={formData.parentWhatsapp}
-                onChange={(e) => setFormData({ ...formData, parentWhatsapp: e.target.value })}
-                className="input-field"
-              />
-            </div>
-            <div className="flex gap-2">
-              <button type="submit" className="btn btn-primary">
-                Speichern
-              </button>
+      {/* Error */}
+      {error && (
+        <div className="p-4 bg-red-500/20 border border-red-500 rounded-lg text-red-200">
+          {error}
+        </div>
+      )}
+
+      {/* Search */}
+      <div>
+        <input
+          type="text"
+          placeholder="Nach Name oder Eltern suchen..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 bg-card border border-slate-700 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:border-primary"
+        />
+      </div>
+
+      {/* Players List */}
+      {filteredPlayers.length === 0 ? (
+        <div className="text-center py-12 text-slate-400">
+          {players.length === 0 ? 'Noch keine Spieler hinzugefügt' : 'Keine Spieler gefunden'}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredPlayers.map((player) => (
+            <div
+              key={player.id}
+              className="p-4 bg-card border border-slate-700 rounded-lg hover:border-primary/50 transition flex justify-between items-start"
+            >
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="text-sm font-bold text-primary">
+                      {player.firstName[0]}{player.lastName[0]}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white">
+                      {player.firstName} {player.lastName}
+                    </h3>
+                    <p className="text-sm text-slate-400">
+                      Eltern: {player.parentName}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Contact Info */}
+                <div className="mt-2 text-sm text-slate-300 space-y-1">
+                  {player.parentPhone && (
+                    <p>
+                      📞{' '}
+                      <a
+                        href={`tel:${player.parentPhone}`}
+                        className="hover:text-primary text-blue-400"
+                      >
+                        {player.parentPhone}
+                      </a>
+                    </p>
+                  )}
+                  {player.parentWhatsapp && (
+                    <p>
+                      💬{' '}
+                      {player.parentWhatsapp.includes('@') ? (
+                        <span>{player.parentWhatsapp}</span>
+                      ) : (
+                        <a
+                          href={`https://wa.me/${player.parentWhatsapp}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-primary text-green-400"
+                        >
+                          {player.parentWhatsapp}
+                        </a>
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Delete Button */}
               <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="btn btn-secondary"
+                onClick={() => setDeleteConfirm(player.id)}
+                className="ml-4 px-3 py-1 text-red-400 hover:bg-red-500/20 rounded text-sm transition"
+              >
+                Löschen
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card border border-slate-700 rounded-lg p-6 max-w-sm">
+            <h2 className="text-xl font-bold text-white mb-4">Spieler löschen?</h2>
+            <p className="text-slate-300 mb-6">
+              Dieser Spieler wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
               >
                 Abbrechen
               </button>
+              <button
+                onClick={() => handleDeletePlayer(deleteConfirm)}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+              >
+                Löschen
+              </button>
             </div>
-          </form>
+          </div>
         </div>
       )}
 
-      {/* Players Table */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-slate-700 border-t-green-500 rounded-full animate-spin"></div>
-        </div>
-      ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-700 border-b border-slate-600">
-              <tr>
-                <th className="text-left px-4 py-3 text-sm font-semibold">#</th>
-                <th className="text-left px-4 py-3 text-sm font-semibold">Name</th>
-                <th className="text-left px-4 py-3 text-sm font-semibold">Status</th>
-                <th className="text-left px-4 py-3 text-sm font-semibold">Kontakt</th>
-                <th className="text-left px-4 py-3 text-sm font-semibold">Aktionen</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPlayers.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-400">
-                    Keine Spieler gefunden
-                  </td>
-                </tr>
-              ) : (
-                filteredPlayers.map((player) => (
-                  <tr key={player.id} className="border-b border-slate-700 hover:bg-slate-700 hover:bg-opacity-50">
-                    <td className="px-4 py-3 font-semibold">{player.jerseyNumber}</td>
-                    <td className="px-4 py-3">{player.name}</td>
-                    <td className="px-4 py-3">{getStatusBadge(player.status)}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        {player.parentPhone && (
-                          <a href={`tel:${player.parentPhone}`} title="Telefon">
-                            📞
-                          </a>
-                        )}
-                        {player.parentWhatsapp && (
-                          <a
-                            href={`https://wa.me/${player.parentWhatsapp}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="WhatsApp"
-                          >
-                            💬
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleDeletePlayer(player.id)}
-                        className="text-red-400 hover:text-red-300 text-sm"
-                      >
-                        Löschen
-                      </button>
-                    </td>
-                  </tr>
-                ))
+      {/* Add Player Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card border border-slate-700 rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-white">Spieler hinzufügen</h2>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setFormErrors({});
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleAddPlayer} className="space-y-4">
+              {/* Vorname */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-1">
+                  Vorname *
+                </label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  placeholder="z.B. Max"
+                  className={`w-full px-3 py-2 bg-main border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-primary ${
+                    formErrors.firstName ? 'border-red-500' : 'border-slate-700'
+                  }`}
+                />
+                {formErrors.firstName && (
+                  <p className="text-red-400 text-sm mt-1">{formErrors.firstName}</p>
+                )}
+              </div>
+
+              {/* Nachname */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-1">
+                  Nachname *
+                </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  placeholder="z.B. Mustermann"
+                  className={`w-full px-3 py-2 bg-main border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-primary ${
+                    formErrors.lastName ? 'border-red-500' : 'border-slate-700'
+                  }`}
+                />
+                {formErrors.lastName && (
+                  <p className="text-red-400 text-sm mt-1">{formErrors.lastName}</p>
+                )}
+              </div>
+
+              {/* Elternname */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-1">
+                  Name eines Elternteils *
+                </label>
+                <input
+                  type="text"
+                  name="parentName"
+                  value={formData.parentName}
+                  onChange={handleInputChange}
+                  placeholder="z.B. Anna Mustermann"
+                  className={`w-full px-3 py-2 bg-main border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-primary ${
+                    formErrors.parentName ? 'border-red-500' : 'border-slate-700'
+                  }`}
+                />
+                {formErrors.parentName && (
+                  <p className="text-red-400 text-sm mt-1">{formErrors.parentName}</p>
+                )}
+              </div>
+
+              {/* Telefon */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-1">
+                  Telefonnummer *
+                </label>
+                <input
+                  type="tel"
+                  name="parentPhone"
+                  value={formData.parentPhone}
+                  onChange={handleInputChange}
+                  placeholder="z.B. +49 123 456789"
+                  className={`w-full px-3 py-2 bg-main border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-primary ${
+                    formErrors.parentPhone ? 'border-red-500' : 'border-slate-700'
+                  }`}
+                />
+                {formErrors.parentPhone && (
+                  <p className="text-red-400 text-sm mt-1">{formErrors.parentPhone}</p>
+                )}
+              </div>
+
+              {/* WhatsApp */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-1">
+                  WhatsApp-Nummer oder Benutzername *
+                </label>
+                <input
+                  type="text"
+                  name="parentWhatsapp"
+                  value={formData.parentWhatsapp}
+                  onChange={handleInputChange}
+                  placeholder="z.B. +49 123 456789 oder anna.mustermann"
+                  className={`w-full px-3 py-2 bg-main border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-primary ${
+                    formErrors.parentWhatsapp ? 'border-red-500' : 'border-slate-700'
+                  }`}
+                />
+                {formErrors.parentWhatsapp && (
+                  <p className="text-red-400 text-sm mt-1">{formErrors.parentWhatsapp}</p>
+                )}
+              </div>
+
+              {/* Submit Error */}
+              {formErrors.submit && (
+                <div className="p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-200 text-sm">
+                  {formErrors.submit}
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
-      )}
 
-      {error && (
-        <div className="card bg-red-900 border-red-700">
-          <p className="text-red-200">⚠️ Fehler: {error}</p>
+              {/* Buttons */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    setFormErrors({});
+                  }}
+                  className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition font-medium"
+                >
+                  Spieler hinzufügen
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
