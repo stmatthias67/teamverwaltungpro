@@ -26,10 +26,95 @@ body {
   min-height: 100vh;
 }
 
-.primary { color: var(--color-primary); }
-.bg-primary { background-color: var(--color-primary); }
-.border-primary { border-color: var(--color-primary); }
+/* Input Fields */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="tel"],
+textarea,
+select {
+  background-color: #0d1117;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  transition: all 0.2s;
+}
 
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="number"]::placeholder,
+input[type="tel"]::placeholder,
+textarea::placeholder {
+  color: #6e7681;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="datetime-local"]:focus,
+input[type="tel"]:focus,
+textarea:focus,
+select:focus {
+  border-color: #2ea043;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(46, 160, 67, 0.1);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: #2ea043;
+  cursor: pointer;
+}
+
+/* Buttons */
+.btn {
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-size: 14px;
+}
+
+.btn-primary {
+  background-color: #2ea043;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #26872f;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: #30363d;
+  color: #e6edf3;
+}
+
+.btn-secondary:hover {
+  background-color: #424a52;
+}
+
+.btn-danger {
+  background-color: #da3633;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;
+}
+
+/* Cards */
 .card {
   background-color: #161b22;
   border: 1px solid #30363d;
@@ -37,19 +122,103 @@ body {
   padding: 16px;
 }
 
-.btn {
-  padding: 8px 16px;
-  border-radius: 6px;
+.card:hover {
+  border-color: #444c56;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
 }
 
-.btn-primary {
+.badge.primary {
+  background-color: rgba(46, 160, 67, 0.2);
+  color: #2ea043;
+}
+
+.badge.secondary {
+  background-color: rgba(31, 111, 235, 0.2);
+  color: #1f6feb;
+}
+
+.badge.danger {
+  background-color: rgba(218, 54, 51, 0.2);
+  color: #da3633;
+}
+
+/* Utility Classes */
+.bg-main {
+  background-color: var(--color-bg-main);
+}
+
+.bg-card {
+  background-color: var(--color-bg-card);
+}
+
+.text-primary {
+  color: var(--color-primary);
+}
+
+.border-primary {
+  border-color: var(--color-primary);
+}
+
+.bg-primary {
   background-color: var(--color-primary);
-  color: white;
 }
 
-.btn-primary:hover {
-  opacity: 0.9;
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444c56;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Animations */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
