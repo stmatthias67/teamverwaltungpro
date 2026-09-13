@@ -1,10 +1,10 @@
 'use client';
 
+import './globals.css';
 import { useEffect } from 'react';
 
 export default function RootLayout({ children }) {
   useEffect(() => {
-    // Settings laden deaktiviert - nur Standard-Farben
     const root = document.documentElement;
     root.style.setProperty('--color-primary', '#2ea043');
     root.style.setProperty('--color-secondary', '#1f6feb');
@@ -15,9 +15,15 @@ export default function RootLayout({ children }) {
   }, []);
 
   return (
-    <html>
+    <html lang="de">
+      <head>
+        <title>TeamManager</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body>
-        {children}
+        <div className="p-4 max-w-7xl mx-auto">
+          {children}
+        </div>
       </body>
     </html>
   );
