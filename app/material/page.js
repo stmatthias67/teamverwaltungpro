@@ -2,156 +2,494 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 
 export default function MaterialPage() {
-  const [laundryLogs, setLaundryLogs] = useState([]);
   const [players, setPlayers] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [borrows, setBorrows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [materialItems, setMaterialItems] = useState([
-    { id: 1, name: 'Trikotsatz Heim (Rot)', category: 'Jersey', quantity: 16, complete: true },
-    { id: 2, name: 'Trikotsatz Auswärts (Blau)', category: 'Jersey', quantity: 15, complete: false, missing: 'Hose Gr. M' },
-  ]);
+
+  // Modal States
+  const [showBorrowModal, setShowBorrowModal] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [selectedBorrow, setSelectedBorrow] = useState(null);
+  const [returnData, setReturnData] = useState({
+    notes: '',
+    damagedItems: [],
+    status: 'OK', // OK, DAMAGED, LOST
+  });
+
+  const [showInventoryModal, setShowInventoryModal] = useState(false);
+  const [newMaterial, setNewMaterial] = useState({
+    name: '',
+    category: 'Jersey',
+  });
 
   useEffect(() => {
-    loadData();
+    loadAllData();
   }, []);
 
-  async function loadData() {
+  async function loadAllData() {
     try {
-      const [laundryRes, playersRes] = await Promise.all([
-        fetch('/api/laundry'),
+      setLoading(true);
+      
+      const [playersRes, materialsRes, borrowsRes] = await Promise.all([
         fetch('/api/players'),
+        fetch('/api/material-inventory'),
+        fetch('/api/material-borrow'),
       ]);
 
-      if (!laundryRes.ok || !playersRes.ok) throw new Error('Failed to load data');
-
-      const laundryData = await laundryRes.json();
       const playersData = await playersRes.json();
+      const materialsData = await materialsRes.json();
+      const borrowsData = await borrowsRes.json();
 
-      setLaundryLogs(laundryData.data || []);
       setPlayers(playersData.data || []);
+      setMaterials(materialsData.data || []);
+      setBorrows(borrowsData.data || []);
+      setError(null);
     } catch (err) {
       setError(err.message);
+      console.error('Error loading data:', err);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleAddLaundry(playerId) {
-    try {
-      const res = await fetch('/api/laundry', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId }),
-      });
+  async function handleBorrowMaterial(e) {
+    e.preventDefault();
+    if (!selectedPlayer) return;
 
-      if (!res.ok) throw new Error('Failed to update laundry');
-      loadData();
+    try {
+      // Übergebe Material an Spieler
+      for (const materialId of selectedPlayer.selectedMaterials || []) {
+        const res = await fetch('/api/material-borrow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            playerId: selectedPlayer.id,
+            itemId: materialId,
+            notes: `Übergeben am ${new Date().toLocaleDateString('de-DE')}`,
+          }),
+        });
+
+        if (!res.ok) throw new Error('Material konnte nicht übergeben werden');
+      }
+
+      setShowBorrowModal(false);
+      setSelectedPlayer(null);
+      await loadAllData();
     } catch (err) {
-      alert('Fehler: ' + err.message);
+      setError(err.message);
     }
   }
 
-  const getPlayerName = (playerId) => {
-    return players.find((p) => p.id === playerId)?.name || 'Unbekannt';
+  async function handleReturnMaterial(e) {
+    e.preventDefault();
+    if (!selectedBorrow) return;
+
+    try {
+      const res = await fetch('/api/material-borrow', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          borrowId: selectedBorrow.id,
+          status: returnData.status,
+          notes: returnData.notes,
+          returnedAt: new Date().toISOString(),
+        }),
+      });
+
+      if (!res.ok) throw new Error('Material konnte nicht zurückgegeben werden');
+
+      setShowReturnModal(false);
+      setSelectedBorrow(null);
+      setReturnData({ notes: '', damagedItems: [], status: 'OK' });
+      await loadAllData();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleAddMaterial(e) {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/material-inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMaterial),
+      });
+
+      if (!res.ok) throw new Error('Material konnte nicht hinzugefügt werden');
+
+      setNewMaterial({ name: '', category: 'Jersey' });
+      setShowInventoryModal(false);
+      await loadAllData();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  const activeBorrows = borrows.filter(b => b.status === 'BORROWED');
+  const returnedBorrows = borrows.filter(b => b.status !== 'BORROWED');
+
+  const categoryEmojis = {
+    Jersey: '👕',
+    Shorts: '👖',
+    Socks: '🧦',
+    Shoes: '👟',
+    Other: '📦',
   };
 
-  const laundriestPlayer = laundryLogs[0];
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="w-8 h-8 border-4 border-slate-700 border-t-primary rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-4xl font-bold mb-2">🧥 Material & Trikotwäsche</h1>
-        <p className="text-gray-400">Verwalten Sie Inventar und Waschvorgänge</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-4xl font-bold text-white">🧥 Material</h1>
+          <p className="text-slate-400 mt-1">Trikotverwaltung und Übergabeprotokoll</p>
+        </div>
+        <button
+          onClick={() => setShowInventoryModal(true)}
+          className="btn btn-primary"
+        >
+          + Material hinzufügen
+        </button>
       </div>
 
-      {/* Fairness Bell */}
-      {laundriestPlayer && (
-        <div className="card bg-gradient-to-r from-yellow-900 to-yellow-800 border-yellow-700">
-          <h3 className="text-lg font-bold mb-2">🔔 Wasch-Fairness-Glocke</h3>
-          <p className="text-sm text-gray-200">
-            <strong>{getPlayerName(laundriestPlayer.playerId)}</strong> hat mit erst{' '}
-            <strong>{laundriestPlayer.count}</strong> Wäsche am längsten nicht gewaschen!
-          </p>
+      {error && (
+        <div className="p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-200">
+          ⚠ {error}
         </div>
       )}
 
-      {/* Laundry Log */}
-      <div className="card">
-        <h3 className="text-lg font-bold mb-4">📊 Wäsch-Protokoll</h3>
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="w-8 h-8 border-4 border-slate-700 border-t-green-500 rounded-full animate-spin"></div>
+      {/* Aktive Übergaben */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-white">Aktive Übergaben</h2>
+        {activeBorrows.length === 0 ? (
+          <div className="card text-center text-slate-400 py-8">
+            Keine aktiven Übergaben
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-700 border-b border-slate-600">
-                <tr>
-                  <th className="text-left px-4 py-3 font-semibold">#</th>
-                  <th className="text-left px-4 py-3 font-semibold">Name</th>
-                  <th className="text-left px-4 py-3 font-semibold">Wäschen</th>
-                  <th className="text-left px-4 py-3 font-semibold">Zuletzt</th>
-                  <th className="text-left px-4 py-3 font-semibold">Aktion</th>
-                </tr>
-              </thead>
-              <tbody>
-                {laundryLogs.map((log, idx) => (
-                  <tr key={log.id} className="border-b border-slate-700 hover:bg-slate-700 hover:bg-opacity-50">
-                    <td className="px-4 py-3">{idx + 1}</td>
-                    <td className="px-4 py-3">{getPlayerName(log.playerId)}</td>
-                    <td className="px-4 py-3 font-bold">{log.count}</td>
-                    <td className="px-4 py-3 text-xs text-gray-400">
-                      {log.lastWashedAt
-                        ? new Date(log.lastWashedAt).toLocaleDateString('de-DE')
-                        : 'Nie'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleAddLaundry(log.playerId)}
-                        className="btn btn-small bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        +1 Wäsche
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="grid gap-4">
+            {activeBorrows.map((borrow) => (
+              <div key={borrow.id} className="card">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-white">
+                      {borrow.player.firstName} {borrow.player.lastName}
+                    </h3>
+                    <p className="text-sm text-slate-300 mt-1">
+                      {borrow.item.name} ({borrow.item.category})
+                    </p>
+                    <p className="text-xs text-slate-400 mt-2">
+                      📅 Übergeben am {new Date(borrow.borrowedAt).toLocaleDateString('de-DE')}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedBorrow(borrow);
+                      setShowReturnModal(true);
+                    }}
+                    className="btn btn-primary text-sm"
+                  >
+                    Beenden
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Material Inventory */}
-      <div className="card">
-        <h3 className="text-lg font-bold mb-4">📦 Materialbestand</h3>
-        <div className="space-y-3">
-          {materialItems.map((item) => (
-            <div key={item.id} className="p-4 border border-slate-700 rounded-lg">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="font-semibold">{item.name}</p>
-                  <p className="text-xs text-gray-400">{item.category}</p>
+      {/* Rückgabehistorie */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-white">Rückgabehistorie</h2>
+        {returnedBorrows.length === 0 ? (
+          <div className="card text-center text-slate-400 py-8">
+            Keine Rückgaben vorhanden
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {returnedBorrows.map((borrow) => {
+              const statusColors = {
+                RETURNED: 'bg-green-900/30 text-green-200',
+                DAMAGED: 'bg-yellow-900/30 text-yellow-200',
+                LOST: 'bg-red-900/30 text-red-200',
+              };
+              
+              return (
+                <div key={borrow.id} className={`card ${statusColors[borrow.status]}`}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold">
+                        {borrow.player.firstName} {borrow.player.lastName}
+                      </h3>
+                      <p className="text-sm mt-1">
+                        {borrow.item.name} ({borrow.item.category})
+                      </p>
+                      <p className="text-xs mt-2 opacity-75">
+                        📅 {new Date(borrow.borrowedAt).toLocaleDateString('de-DE')} → {new Date(borrow.returnedAt).toLocaleDateString('de-DE')}
+                      </p>
+                      {borrow.notes && <p className="text-xs mt-2 italic">📝 {borrow.notes}</p>}
+                    </div>
+                    <div className="text-right">
+                      <span className="px-2 py-1 rounded text-xs font-medium">
+                        {borrow.status === 'RETURNED' ? '✅ Zurück' : borrow.status === 'DAMAGED' ? '⚠ Beschädigt' : '❌ Verloren'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <span
-                  className={`badge ${
-                    item.complete ? 'badge-success' : 'badge-warning'
-                  }`}
-                >
-                  {item.complete ? '✓ Vollständig' : '⚠️ Unvollständig'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">{item.quantity} Sets vorhanden</span>
-                {item.missing && <span className="text-xs text-orange-400">({item.missing} seit ...)</span>}
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {error && <div className="card bg-red-900 border-red-700 text-red-200">⚠️ {error}</div>}
+      {/* Inventar */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-white">Inventar</h2>
+        {materials.length === 0 ? (
+          <div className="card text-center text-slate-400 py-8">
+            Kein Material im Inventar
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {materials.map((material) => (
+              <div key={material.id} className="card">
+                <div className="text-3xl mb-2">{categoryEmojis[material.category] || '📦'}</div>
+                <h3 className="font-bold text-white">{material.name}</h3>
+                <p className="text-sm text-slate-400 mt-1">{material.category}</p>
+                <p className="text-lg text-primary font-bold mt-2">x{material.quantity}</p>
+                {!material.complete && (
+                  <p className="text-xs text-yellow-400 mt-2">⚠ {material.missingItems}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Borrow Material Modal */}
+      {showBorrowModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-white">Material übergeben</h2>
+              <button
+                onClick={() => setShowBorrowModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleBorrowMaterial} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Spieler</label>
+                <select
+                  value={selectedPlayer?.id || ''}
+                  onChange={(e) => {
+                    const player = players.find(p => p.id === e.target.value);
+                    setSelectedPlayer({ ...player, selectedMaterials: [] });
+                  }}
+                  className="w-full"
+                >
+                  <option value="">-- Spieler wählen --</option>
+                  {players.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.firstName} {p.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedPlayer && (
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Material</label>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {materials.map((m) => (
+                      <label key={m.id} className="flex items-center gap-2 p-2 hover:bg-slate-700 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={(selectedPlayer.selectedMaterials || []).includes(m.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedPlayer({
+                                ...selectedPlayer,
+                                selectedMaterials: [...(selectedPlayer.selectedMaterials || []), m.id],
+                              });
+                            } else {
+                              setSelectedPlayer({
+                                ...selectedPlayer,
+                                selectedMaterials: (selectedPlayer.selectedMaterials || []).filter(id => id !== m.id),
+                              });
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-white">{m.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowBorrowModal(false)}
+                  className="flex-1 btn btn-secondary"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  disabled={!selectedPlayer || (selectedPlayer.selectedMaterials || []).length === 0}
+                  className="flex-1 btn btn-primary disabled:opacity-50"
+                >
+                  Übergeben
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Return Material Modal */}
+      {showReturnModal && selectedBorrow && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-white">Material zurückgeben</h2>
+              <button
+                onClick={() => setShowReturnModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleReturnMaterial} className="space-y-4">
+              <div className="p-3 bg-slate-700 rounded">
+                <p className="text-white font-bold">{selectedBorrow.player.firstName} {selectedBorrow.player.lastName}</p>
+                <p className="text-slate-300 text-sm">{selectedBorrow.item.name}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Status</label>
+                <select
+                  value={returnData.status}
+                  onChange={(e) => setReturnData({ ...returnData, status: e.target.value })}
+                  className="w-full"
+                >
+                  <option value="OK">✅ Alles vollständig</option>
+                  <option value="DAMAGED">⚠ Beschädigt</option>
+                  <option value="LOST">❌ Verloren</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Notizen</label>
+                <textarea
+                  value={returnData.notes}
+                  onChange={(e) => setReturnData({ ...returnData, notes: e.target.value })}
+                  placeholder="z.B. Trikot zerrissen, Socken fehlen..."
+                  rows="4"
+                  className="w-full"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowReturnModal(false)}
+                  className="flex-1 btn btn-secondary"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 btn btn-primary"
+                >
+                  Bestätigen
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Material Modal */}
+      {showInventoryModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-white">Material hinzufügen</h2>
+              <button
+                onClick={() => setShowInventoryModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddMaterial} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Name</label>
+                <input
+                  type="text"
+                  value={newMaterial.name}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, name: e.target.value })}
+                  placeholder="z.B. Trikotsatz Heim"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Kategorie</label>
+                <select
+                  value={newMaterial.category}
+                  onChange={(e) => setNewMaterial({ ...newMaterial, category: e.target.value })}
+                >
+                  <option value="Jersey">👕 Trikot</option>
+                  <option value="Shorts">👖 Hose</option>
+                  <option value="Socks">🧦 Socken</option>
+                  <option value="Shoes">👟 Schuhe</option>
+                  <option value="Other">📦 Sonstiges</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowInventoryModal(false)}
+                  className="flex-1 btn btn-secondary"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 btn btn-primary"
+                >
+                  Hinzufügen
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
