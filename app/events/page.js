@@ -1,4 +1,4 @@
-// app/events/page.js
+// app/events/page.js (UPDATED VERSION)
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -13,6 +13,7 @@ export default function EventsPage() {
   const [formData, setFormData] = useState({
     title: '',
     type: 'TRAINING',
+    matchType: 'FRIENDLY', // FRIENDLY oder LEAGUE (nur für MATCH)
     date: '',
     meetTime: '',
     location: '',
@@ -58,14 +59,25 @@ export default function EventsPage() {
     }
 
     try {
+      const eventData = {
+        title: formData.title,
+        type: formData.type,
+        date: new Date(formData.date).toISOString(),
+        meetTime: formData.meetTime ? new Date(formData.meetTime).toISOString() : null,
+        location: formData.location,
+        distanceInfo: formData.distanceInfo,
+        isAway: formData.isAway,
+      };
+
+      // Für MATCH: matchType in title oder als eigenes Feld speichern
+      if (formData.type === 'MATCH') {
+        eventData.title = `${formData.title} (${formData.matchType === 'FRIENDLY' ? 'Freundschaftsspiel' : 'Punktspiel'})`;
+      }
+
       const res = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          date: new Date(formData.date).toISOString(),
-          meetTime: formData.meetTime ? new Date(formData.meetTime).toISOString() : null,
-        }),
+        body: JSON.stringify(eventData),
       });
 
       if (!res.ok) {
@@ -76,6 +88,7 @@ export default function EventsPage() {
       setFormData({
         title: '',
         type: 'TRAINING',
+        matchType: 'FRIENDLY',
         date: '',
         meetTime: '',
         location: '',
@@ -204,7 +217,7 @@ export default function EventsPage() {
       {/* Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal">
+          <div className="modal max-w-lg">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold text-white">Event erstellen</h2>
               <button
@@ -246,6 +259,21 @@ export default function EventsPage() {
                   <option value="TOURNAMENT">🏆 Turnier</option>
                 </select>
               </div>
+
+              {/* Match Type (nur wenn MATCH) */}
+              {formData.type === 'MATCH' && (
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Spieltyp</label>
+                  <select
+                    name="matchType"
+                    value={formData.matchType}
+                    onChange={handleInputChange}
+                  >
+                    <option value="FRIENDLY">🤝 Freundschaftsspiel</option>
+                    <option value="LEAGUE">🏆 Punktspiel</option>
+                  </select>
+                </div>
+              )}
 
               {/* Datum */}
               <div>
