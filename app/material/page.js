@@ -170,7 +170,7 @@ export default function MaterialPage() {
 
       {error && (
         <div className="p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-200">
-          ⚠ {error}
+          ⚠️ {error}
         </div>
       )}
 
@@ -246,7 +246,7 @@ export default function MaterialPage() {
                     </div>
                     <div className="text-right">
                       <span className="px-2 py-1 rounded text-xs font-medium">
-                        {borrow.status === 'RETURNED' ? '✅ Zurück' : borrow.status === 'DAMAGED' ? '⚠ Beschädigt' : '❌ Verloren'}
+                        {borrow.status === 'RETURNED' ? '✅ Zurück' : borrow.status === 'DAMAGED' ? '⚠️ Beschädigt' : '❌ Verloren'}
                       </span>
                     </div>
                   </div>
@@ -273,7 +273,7 @@ export default function MaterialPage() {
                 <p className="text-sm text-slate-400 mt-1">{material.category}</p>
                 <p className="text-lg text-primary font-bold mt-2">x{material.quantity}</p>
                 {!material.complete && (
-                  <p className="text-xs text-yellow-400 mt-2">⚠ {material.missingItems}</p>
+                  <p className="text-xs text-yellow-400 mt-2">⚠️ {material.missingItems}</p>
                 )}
               </div>
             ))}
@@ -395,7 +395,7 @@ export default function MaterialPage() {
                   className="w-full"
                 >
                   <option value="OK">✅ Alles vollständig</option>
-                  <option value="DAMAGED">⚠ Beschädigt</option>
+                  <option value="DAMAGED">⚠️ Beschädigt</option>
                   <option value="LOST">❌ Verloren</option>
                 </select>
               </div>
