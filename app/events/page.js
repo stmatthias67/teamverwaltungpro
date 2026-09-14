@@ -149,7 +149,7 @@ export default function EventsPage() {
       {/* Error Message */}
       {error && (
         <div className="p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-200">
-          ⚠ {error}
+          ⚠️ {error}
         </div>
       )}
 
