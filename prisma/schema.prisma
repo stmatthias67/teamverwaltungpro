@@ -1,6 +1,5 @@
 // prisma/schema.prisma
-// Überarbeitetes Schema für TeamManager Pro
-// Migrationen erforderlich!
+// TeamManager Pro v3 - Teammanagement & Organisation
 
 generator client {
   provider = "prisma-client-js"
@@ -12,47 +11,53 @@ datasource db {
 }
 
 // ============================================================================
-// PLAYER MODEL - Vereinfacht ohne jerseyNumber und status
+// PLAYER - Spielberechtigungsliste (Stammdaten)
 // ============================================================================
 model Player {
-  id              String          @id @default(cuid())
-  firstName       String          // Vorname
-  lastName        String          // Nachname
-  parentName      String?         // Name des Elternteils
-  parentPhone     String?         // Telefonnummer des Elternteils
-  parentWhatsapp  String?         // WhatsApp-Nummer oder Benutzername
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id               String           @id @default(cuid())
+  firstName        String
+  lastName         String
+  birthYear        Int?             // Geburtsjahrgang, z.B. 2013
+  strongFoot       String?          // "R" = Rechtsfuß, "L" = Linksfuß
+  performanceGroup String?          // "A" | "B" | "C" | "D"
+  nationality      String?          // Staatsangehörigkeit
+  parentName       String?
+  parentPhone      String?
+  parentWhatsapp   String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
-  // Relations
-  attendances     Attendance[]    // Anwesenheit bei Events
-  nominations     Nomination[]    // Nominierungen für Events (Startelf/Bank)
-  borrows         MaterialBorrow[]
-  tacticsPresets  TacticsPreset[]
-  laundryLog      LaundryLog?
+  attendances      Attendance[]
+  nominations      Nomination[]
+  borrows          MaterialBorrow[]
+  tacticsPresets   TacticsPreset[]
+  laundryLog       LaundryLog?
+  jerseyIssues     JerseyIssue[]
 
   @@map("players")
 }
 
 // ============================================================================
-// EVENT MODEL - Unverändert
+// EVENT - Training, Spiel, Turnier
+// scoreHome / scoreAway: Ergebnis im Format "00:00" (wird im Frontend geparst)
 // ============================================================================
 model Event {
-  id              String          @id @default(cuid())
-  title           String
-  type            EventType
-  date            DateTime
-  meetTime        DateTime?
-  location        String
-  distanceInfo    String?         // z.B. "8.6 km / 14 Min"
-  isAway          Boolean         @default(false)
-  notes           String?         // Zusätzliche Notizen
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id           String      @id @default(cuid())
+  title        String
+  type         EventType
+  date         DateTime
+  meetTime     DateTime?
+  location     String
+  distanceInfo String?
+  isAway       Boolean     @default(false)
+  notes        String?
+  scoreHome    Int?
+  scoreAway    Int?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
-  // Relations
-  attendances     Attendance[]
-  nominations     Nomination[]    // Nominierungen (wer spielt)
+  attendances  Attendance[]
+  nominations  Nomination[]
 
   @@map("events")
 }
@@ -64,28 +69,21 @@ enum EventType {
 }
 
 // ============================================================================
-// NOMINATION MODEL - NEU!
-// Speichert Spieler-Nominierungen pro Event mit Rückennummern
-// Ablauf:
-// 1. Spieler werden in FIELD oder BENCH nominiert
-// 2. Rückennummern werden zugewiesen
-// 3. Anwesenheit wird erfasst (in Attendance model)
+// NOMINATION - Spieler pro Spiel (Feld / Bank / nicht dabei) + Rückennummer
 // ============================================================================
 model Nomination {
-  id              String          @id @default(cuid())
-  eventId         String
-  playerId        String
-  status          NominationStatus  // FIELD (Startelf), BENCH (Ersatzbank), NOT_NOMINATED
-  jerseyNumber    Int?            // Rückennummer für dieses Event (flexibel!)
-  position        String?         // Spielposition auf dem Feld (wird vom Taktik-Board gespeichert)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id           String            @id @default(cuid())
+  eventId      String
+  playerId     String
+  status       NominationStatus
+  jerseyNumber Int?
+  position     String?           // Position auf dem Taktik-Board, z.B. "ST-1"
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
-  // Relations
-  event           Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  player          Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  event        Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  player       Player            @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
-  // Constraints
   @@unique([eventId, playerId])
   @@index([eventId])
   @@index([playerId])
@@ -93,28 +91,25 @@ model Nomination {
 }
 
 enum NominationStatus {
-  FIELD           // Spielfeld / Startelf
-  BENCH           // Ersatzbank
-  NOT_NOMINATED   // Nicht dabei
+  FIELD
+  BENCH
+  NOT_NOMINATED
 }
 
 // ============================================================================
-// ATTENDANCE MODEL - Anwesenheit
-// Speichert PRESENT/ABSENT für jedes Event-Spieler-Paar
+// ATTENDANCE - "x" (PRESENT) / "n" (ABSENT) für Training und Spiel
 // ============================================================================
 model Attendance {
-  id              String          @id @default(cuid())
-  eventId         String
-  playerId        String
-  status          AttendanceStatus  // PRESENT oder ABSENT
-  checkedInAt     DateTime?       // Zeitstempel des Check-Ins
-  updatedAt       DateTime        @updatedAt
+  id          String            @id @default(cuid())
+  eventId     String
+  playerId    String
+  status      AttendanceStatus
+  checkedInAt DateTime?
+  updatedAt   DateTime          @updatedAt
 
-  // Relations
-  event           Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  player          Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  event       Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  player      Player            @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
-  // Constraints
   @@unique([eventId, playerId])
   @@index([eventId])
   @@index([playerId])
@@ -127,49 +122,51 @@ enum AttendanceStatus {
 }
 
 // ============================================================================
-// MATERIAL INVENTORY MODEL
-// Erfasst Vereinsmaterial (Trikotsätze, Trikots, Hosen, etc.)
+// MATERIAL INVENTORY - Bestand (Soll / Ist / Zustand / Lagerort / Prüfung)
 // ============================================================================
 model MaterialInventory {
-  id              String          @id @default(cuid())
-  name            String          // z.B. "Trikotsatz Heim (Rot)"
-  category        String          // z.B. "Jersey", "Shorts", "Socks", "Shoes"
-  quantity        Int             // Anzahl Teile
-  complete        Boolean         @default(true)  // Set ist komplett?
-  missingItems    String?         // z.B. "Hose Gr. M, Socken Gr. 42"
-  notes           String?         // Zusätzliche Notizen
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id             String            @id @default(cuid())
+  name           String
+  category       String
+  shouldQuantity Int               @default(0)   // Anzahl Soll
+  quantity       Int               @default(0)   // Anzahl Ist
+  condition      MaterialCondition @default(GOOD)
+  location       String?           // Lagerort
+  lastInspection DateTime?         // Letzte Prüfung
+  complete       Boolean           @default(true)
+  missingItems   String?
+  notes          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
-  // Relations
-  borrows         MaterialBorrow[]
+  borrows        MaterialBorrow[]
 
   @@map("material_inventory")
 }
 
+enum MaterialCondition {
+  GOOD
+  USED
+  DAMAGED
+}
+
 // ============================================================================
-// MATERIAL BORROW MODEL - NEU!
-// Speichert Übergabe, Rückgabe und Status von Material
-// Ablauf:
-// 1. Spieler nimmt Material (BORROWED)
-// 2. Spieler gibt Material zurück (RETURNED, LOST, DAMAGED)
+// MATERIAL BORROW - Übergabe / Rückgabe an Spieler
 // ============================================================================
 model MaterialBorrow {
-  id              String          @id @default(cuid())
-  playerId        String
-  itemId          String
-  borrowedAt      DateTime        @default(now())
-  returnedAt      DateTime?
-  status          BorrowStatus    // BORROWED, RETURNED, LOST, DAMAGED
-  notes           String?         // Notizen (z.B. "Trikot zerrissen")
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id         String            @id @default(cuid())
+  playerId   String
+  itemId     String
+  borrowedAt DateTime          @default(now())
+  returnedAt DateTime?
+  status     BorrowStatus
+  notes      String?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
-  // Relations
-  player          Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  item            MaterialInventory @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  player     Player            @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  item       MaterialInventory @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
-  // Constraints
   @@index([playerId])
   @@index([itemId])
   @@index([status])
@@ -177,46 +174,69 @@ model MaterialBorrow {
 }
 
 enum BorrowStatus {
-  BORROWED        // Aktuell beim Spieler
-  RETURNED        // Zurückgegeben (OK)
-  LOST            // Verloren
-  DAMAGED         // Beschädigt
+  BORROWED
+  RETURNED
+  LOST
+  DAMAGED
 }
 
 // ============================================================================
-// LAUNDRY LOG MODEL - Vereinfacht
-// Speichert Wäsche-Eintrag pro Spieler
+// JERSEY ISSUE - Trikotwäsche: Trikotsatz pro Spieler ausgegeben
+// ============================================================================
+model JerseyIssue {
+  id         String        @id @default(cuid())
+  playerId   String
+  jerseySet  String        // z.B. "D2-Heim", "D2-Auswärts"
+  issuedAt   DateTime      @default(now())
+  returnDue  DateTime?     // Rückgabe Soll
+  status     JerseyStatus  @default(PLANNED)
+  cleanCheck Boolean       @default(false) // Sauberkeits-Check
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  player     Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@map("jersey_issues")
+}
+
+enum JerseyStatus {
+  PLANNED       // Geplant
+  TAKEN_HOME    // Mitgenommen
+  RETURNED      // Abgegeben
+}
+
+// ============================================================================
+// LAUNDRY LOG - Waschzähler pro Spieler (Fairness-Glocke)
 // ============================================================================
 model LaundryLog {
-  id              String          @id @default(cuid())
-  playerId        String          @unique
-  count           Int             @default(0)  // Anzahl der Wäschen
-  lastWashedAt    DateTime?       // Wann zuletzt gewaschen
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id           String    @id @default(cuid())
+  playerId     String    @unique
+  count        Int       @default(0)
+  lastWashedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  // Relations
-  player          Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  player       Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@map("laundry_logs")
 }
 
 // ============================================================================
-// TACTICS PRESET MODEL
-// Speichert Formation und Feldkonfigurationen
+// TACTICS PRESET
 // ============================================================================
 model TacticsPreset {
-  id              String          @id @default(cuid())
-  name            String
-  fieldFormat     FieldFormat
-  formation       String          // z.B. "4-3-3", "4-4-2"
-  positionsJson   Json            // Speichert Spieler-Positionen auf dem Feld
-  createdBy       String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id            String      @id @default(cuid())
+  name          String
+  fieldFormat   FieldFormat
+  formation     String
+  positionsJson Json
+  createdBy     String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
-  // Relations
-  player          Player          @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  player        Player      @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@map("tactics_presets")
 }
@@ -230,45 +250,31 @@ enum FieldFormat {
 }
 
 // ============================================================================
-// USER SETTINGS MODEL - Überarbeitet mit Theme-System
+// USER SETTINGS - Theme
 // ============================================================================
 model UserSettings {
-  id              String          @id @default(cuid())
-
-  // Theme & Layout
-  colorMode       ColorMode       @default(DARK)       // LIGHT, DARK, SYSTEM
-  layoutStyle     LayoutStyle     @default(STANDARD)   // STANDARD, MODERN
-
-  // Colors
-  primaryColor    String          @default("#2ea043")      // Vereins-Primärfarbe (Grün)
-  secondaryColor  String          @default("#1f6feb")      // Sekundärfarbe (Blau)
-  bgMain          String          @default("#0d1117")      // Haupthintergrund
-  bgCard          String          @default("#161b22")      // Card-Hintergrund
-  accentColor     String          @default("#58a6ff")      // Akzentfarbe
-
-  // UI Settings
-  compactMode     Boolean         @default(false)
-  
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id             String      @id @default(cuid())
+  colorMode      ColorMode   @default(DARK)
+  layoutStyle    LayoutStyle @default(STANDARD)
+  primaryColor   String      @default("#2ea043")
+  secondaryColor String      @default("#1f6feb")
+  bgMain         String      @default("#0d1117")
+  bgCard         String      @default("#161b22")
+  accentColor    String      @default("#58a6ff")
+  compactMode    Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@map("user_settings")
 }
 
 enum ColorMode {
-  LIGHT           // Heller Modus
-  DARK            // Dunkler Modus
-  SYSTEM          // Folge System-Einstellung
+  LIGHT
+  DARK
+  SYSTEM
 }
 
 enum LayoutStyle {
-  STANDARD        // Standard Layout (Hamburger-Menü)
-  MODERN          // Modern Layout (Sidebar + gerundete Ecken)
+  STANDARD
+  MODERN
 }
-
-// ============================================================================
-// MIGRATIONS ERFORDERLICH
-// ============================================================================
-// 1. npx prisma migrate dev --name add_nomination_and_material_borrow
-// 2. npx prisma db push
-// 3. Alte Daten müssen manuell migriert werden (jerseyNumber → Nomination)
