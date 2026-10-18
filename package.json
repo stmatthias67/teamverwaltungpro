@@ -1,18 +1,16 @@
 {
   "name": "teammanager",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "TeamManager - Professional Football Club Management Web App",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push --force-reset && next build",
+    "build": "prisma generate && prisma db push && next build",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:studio": "prisma studio",
-    "db:seed": "node prisma/seed.js",
-    "db:migrate": "prisma migrate dev"
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "react": "^18.2.0",
