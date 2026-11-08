@@ -31,11 +31,15 @@ function formation(parts) {
 }
 
 const FORMATIONS = {
-  '7v7-2-3-1': { name: '7v7 · 2-3-1', slots: formation([2, 3, 1]) },
-  '9v9-3-3-2': { name: '9v9 · 3-3-2', slots: formation([3, 3, 2]) },
-  '9v9-3-2-3': { name: '9v9 · 3-2-3', slots: formation([3, 2, 3]) },
-  '11v11-4-3-3': { name: '11v11 · 4-3-3', slots: formation([4, 3, 3]) },
+  'feld-4v4': { name: 'Feld · 4v4 (1-2)', slots: formation([1, 2, 0]) },
+  'halle-4v4': { name: 'Halle · 4v4 (1-2)', slots: formation([1, 2, 0]), indoor: true },
   'halle-5v5': { name: 'Halle · 5v5 (1-2-1)', slots: formation([1, 2, 1]), indoor: true },
+  'feld-5v5': { name: 'Feld · 5v5 (2-1-1)', slots: formation([2, 1, 1]) },
+  'feld-6v6': { name: 'Feld · 6v6 (2-2-1)', slots: formation([2, 2, 1]) },
+  '7v7-2-3-1': { name: 'Feld · 7v7 (2-3-1)', slots: formation([2, 3, 1]) },
+  '9v9-3-3-2': { name: 'Feld · 9v9 (3-3-2)', slots: formation([3, 3, 2]) },
+  '9v9-3-2-3': { name: 'Feld · 9v9 (3-2-3)', slots: formation([3, 2, 3]) },
+  '11v11-4-3-3': { name: 'Feld · 11v11 (4-3-3)', slots: formation([4, 3, 3]) },
 };
 
 const GROUPS = ['A', 'B', 'C', 'D'];
