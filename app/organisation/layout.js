@@ -5,8 +5,8 @@ import { Package, Shirt } from 'lucide-react';
 import SubTabs from '@/components/SubTabs';
 
 const TABS = [
-  { href: '/organisation/material', label: 'Material', icon: <Package size={16} strokeWidth={1.5} /> },
-  { href: '/organisation/laundry', label: 'Trikotwäsche', icon: <Shirt size={16} strokeWidth={1.5} /> },
+  { href: '/organisation/material', label: 'Material', Icon: Package },
+  { href: '/organisation/laundry', label: 'Trikotwäsche', Icon: Shirt },
 ];
 
 export default function OrganisationLayout({ children }) {
