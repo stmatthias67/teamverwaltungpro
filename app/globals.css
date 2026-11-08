@@ -1,13 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design-Tokens (unslop, Richtung: ruhig, sachlich, warm wie ein Vereinsheim).
+ * Werte als RGB-Tripel, damit Tailwind Transparenz (bg-card/50) unterstützt.
+ * Dunkel ist Standard, hell wird über die Klasse "light" auf <html> aktiviert.
+ */
 :root {
-  --color-primary: #2ea043;
-  --color-secondary: #1f6feb;
-  --color-accent: #58a6ff;
-  --color-bg-main: #0d1117;
-  --color-bg-card: #161b22;
+  color-scheme: dark;
+  --bg: 20 20 21;            /* Seitenhintergrund #141415 */
+  --deep: 15 15 16;          /* Seitenleiste #0f0f10 */
+  --card: 25 25 27;          /* Karten #19191b */
+  --raised: 35 35 37;        /* Aktive Zeile, Eingabefelder #232325 */
+  --line-strong: 44 44 47;   /* Trennlinien, die sichtbarer sein müssen */
+  --fg: 237 237 237;         /* Primärtext #ededed */
+  --fg2: 161 161 166;        /* Sekundärtext #a1a1a6 */
+  --muted: 133 133 139;      /* Meta, Icons #85858b */
+  --accent: 143 191 122;     /* Spielfeld-Grün, nur für Auswahl und Schlüsselwerte */
+  --on-accent: 20 20 21;
+  --inv: 237 237 237;        /* Primärbutton: helle Fläche mit dunklem Text */
+  --inv-fg: 20 20 21;
+  --pos: 76 195 138;
+  --neg: 229 72 77;
+  --line: rgba(237, 237, 237, 0.08);
+}
+
+:root.light {
+  color-scheme: light;
+  --bg: 250 250 250;
+  --deep: 244 244 245;
+  --card: 255 255 255;
+  --raised: 244 244 245;
+  --line-strong: 228 228 231;
+  --fg: 23 23 23;
+  --fg2: 82 82 82;
+  --muted: 115 115 115;
+  --accent: 47 107 60;       /* dunkles Moosgrün, damit Text 4,5:1 erreicht */
+  --on-accent: 255 255 255;
+  --inv: 23 23 23;
+  --inv-fg: 255 255 255;
+  --pos: 22 163 74;
+  --neg: 220 38 38;
+  --line: rgba(23, 23, 23, 0.08);
 }
 
 * {
@@ -16,159 +53,147 @@
   box-sizing: border-box;
 }
 
-html, body {
-  background-color: #0d1117;
-  color: #e6edf3;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+html,
+body {
+  background-color: rgb(var(--bg));
+  color: rgb(var(--fg));
+  font-family: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
   min-height: 100vh;
 }
 
-/* Input Fields */
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="number"],
-input[type="date"],
-input[type="datetime-local"],
-input[type="tel"],
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Eingabefelder: ruhige Fläche, Hairline, kein Leuchten */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+input[type='date'],
+input[type='datetime-local'],
+input[type='tel'],
 textarea,
 select {
-  background-color: #0d1117;
-  color: #e6edf3;
-  border: 1px solid #30363d;
-  padding: 10px 12px;
-  border-radius: 6px;
+  background-color: rgb(var(--raised));
+  color: rgb(var(--fg));
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 8px 12px;
   font-size: 14px;
   width: 100%;
-  transition: all 0.2s;
+  transition-property: border-color, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-input[type="text"]::placeholder,
-input[type="email"]::placeholder,
-input[type="password"]::placeholder,
-input[type="number"]::placeholder,
-input[type="tel"]::placeholder,
+input::placeholder,
 textarea::placeholder {
-  color: #6e7681;
+  color: rgb(var(--muted));
 }
 
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="password"]:focus,
-input[type="number"]:focus,
-input[type="date"]:focus,
-input[type="datetime-local"]:focus,
-input[type="tel"]:focus,
-textarea:focus,
-select:focus {
-  border-color: #2ea043;
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  border-color: rgb(var(--fg) / 0.35);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(46, 160, 67, 0.1);
 }
 
-input[type="checkbox"],
-input[type="radio"] {
-  accent-color: #2ea043;
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: rgb(var(--accent));
   cursor: pointer;
 }
 
-/* Buttons */
+/* Buttons: Höhe 36, Radius 8, kein Gleiten */
 .btn {
-  padding: 10px 16px;
-  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  font-size: 14px;
+  transition-property: background-color, border-color, color, opacity;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-primary {
-  background-color: #2ea043;
-  color: white;
+  background-color: rgb(var(--inv));
+  color: rgb(var(--inv-fg));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .btn-primary:hover {
-  background-color: #26872f;
-  transform: translateY(-1px);
+  opacity: 0.9;
 }
 
 .btn-secondary {
-  background-color: #30363d;
-  color: #e6edf3;
+  background-color: rgb(var(--raised));
+  border-color: var(--line-strong);
+  color: rgb(var(--fg));
 }
 
 .btn-secondary:hover {
-  background-color: #424a52;
+  background-color: rgb(var(--line-strong));
 }
 
 .btn-danger {
-  background-color: #da3633;
-  color: white;
+  background-color: transparent;
+  border-color: var(--line-strong);
+  color: rgb(var(--neg));
 }
 
 .btn-danger:hover {
-  background-color: #b91c1c;
+  background-color: rgb(var(--neg) / 0.08);
 }
 
-/* Cards */
+/* Karten: Fläche, Hairline, Radius 12 */
 .card {
-  background-color: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 8px;
-  padding: 16px;
+  background-color: rgb(var(--card));
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
 }
 
-.card:hover {
-  border-color: #444c56;
-}
-
-/* Badges */
+/* Badges: ruhiger Text statt leuchtender Pillen */
 .badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background-color: rgb(var(--raised));
+  color: rgb(var(--fg2));
   font-size: 12px;
   font-weight: 500;
 }
 
 .badge.primary {
-  background-color: rgba(46, 160, 67, 0.2);
-  color: #2ea043;
-}
-
-.badge.secondary {
-  background-color: rgba(31, 111, 235, 0.2);
-  color: #1f6feb;
+  color: rgb(var(--accent));
 }
 
 .badge.danger {
-  background-color: rgba(218, 54, 51, 0.2);
-  color: #da3633;
-}
-
-/* Utility Classes */
-.bg-main {
-  background-color: var(--color-bg-main);
-}
-
-.bg-card {
-  background-color: var(--color-bg-card);
-}
-
-.text-primary {
-  color: var(--color-primary);
-}
-
-.border-primary {
-  border-color: var(--color-primary);
-}
-
-.bg-primary {
-  background-color: var(--color-primary);
+  color: rgb(var(--neg));
 }
 
 /* Scrollbar */
@@ -178,16 +203,12 @@ input[type="radio"] {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0d1117;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #30363d;
+  background: var(--line-strong);
   border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #444c56;
 }
 
 /* Modal */
@@ -202,23 +223,12 @@ input[type="radio"] {
 }
 
 .modal {
-  background-color: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 8px;
+  background-color: rgb(var(--card));
+  border: 1px solid var(--line);
+  border-radius: 16px;
   padding: 24px;
   max-width: 500px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
-}
-
-/* Animations */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
 }
