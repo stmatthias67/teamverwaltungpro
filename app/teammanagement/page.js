@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { X, Pencil, Trash2, Phone, MessageCircle } from 'lucide-react';
+import { X, Pencil, Trash2, Phone, MessageCircle, Plus, AlertTriangle } from 'lucide-react';
 
 const EMPTY = {
   firstName: '',
@@ -16,11 +16,12 @@ const EMPTY = {
   parentWhatsapp: '',
 };
 
+// Gruppe A hebt sich über die Akzentfarbe ab, die übrigen bleiben ruhig
 const GROUP_STYLE = {
-  A: 'bg-green-900/50 text-green-300 border-green-700',
-  B: 'bg-blue-900/50 text-blue-300 border-blue-700',
-  C: 'bg-yellow-900/50 text-yellow-300 border-yellow-700',
-  D: 'bg-slate-700 text-slate-300 border-slate-600',
+  A: 'bg-accent/15 text-accent',
+  B: 'bg-raised text-fg2',
+  C: 'bg-raised text-fg2',
+  D: 'bg-raised text-muted',
 };
 
 export default function SpielberechtigungPage() {
@@ -132,14 +133,17 @@ export default function SpielberechtigungPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-        <div className="text-sm text-slate-400">{players.length} Spieler im Kader</div>
-        <button onClick={openCreate} className="btn btn-primary">+ Spieler hinzufügen</button>
+        <div className="text-fg2 num">{players.length} Spieler im Kader</div>
+        <button onClick={openCreate} className="btn btn-primary">
+          <Plus size={16} strokeWidth={1.5} />
+          Spieler hinzufügen
+        </button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <input
           type="text"
-          placeholder="Nach Name oder Elternteil suchen..."
+          placeholder="Nach Name oder Elternteil suchen"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1"
@@ -153,50 +157,55 @@ export default function SpielberechtigungPage() {
         </select>
       </div>
 
-      {error && <div className="p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-200">⚠️ {error}</div>}
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg bg-neg/10 px-3 py-2.5 text-[13px] text-neg">
+          <AlertTriangle size={16} strokeWidth={1.5} className="shrink-0" />
+          {error}
+        </div>
+      )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-slate-700 border-t-primary rounded-full animate-spin" />
-        </div>
+        <p className="py-12 text-center text-muted">Lädt …</p>
       ) : visible.length === 0 ? (
-        <div className="card text-center text-slate-400 py-10">
+        <div className="card text-center text-fg2 py-10">
           {players.length === 0 ? 'Noch keine Spieler angelegt' : 'Keine Treffer'}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-700">
+        <div className="overflow-x-auto rounded-xl border border-line">
           <table className="w-full text-sm">
-            <thead className="bg-card text-slate-400 text-left">
+            <thead className="bg-card text-left">
               <tr>
-                <th className="p-3 font-medium">Name</th>
-                <th className="p-3 font-medium">Jahrgang</th>
-                <th className="p-3 font-medium">Fuß</th>
-                <th className="p-3 font-medium">Gruppe</th>
-                <th className="p-3 font-medium">Nationalität</th>
-                <th className="p-3 font-medium">Eltern</th>
-                <th className="p-3 font-medium text-right">Aktionen</th>
+                <th className="p-3 font-medium text-[12px] text-muted">Name</th>
+                <th className="p-3 font-medium text-[12px] text-muted">Jahrgang</th>
+                <th className="p-3 font-medium text-[12px] text-muted">Fuß</th>
+                <th className="p-3 font-medium text-[12px] text-muted">Gruppe</th>
+                <th className="p-3 font-medium text-[12px] text-muted">Nationalität</th>
+                <th className="p-3 font-medium text-[12px] text-muted">Eltern</th>
+                <th className="p-3 font-medium text-[12px] text-muted text-right">Aktionen</th>
               </tr>
             </thead>
             <tbody>
               {visible.map((p) => (
-                <tr key={p.id} className="border-t border-slate-700 hover:bg-slate-800/50">
-                  <td className="p-3 font-medium text-white">{p.firstName} {p.lastName}</td>
-                  <td className="p-3 text-slate-300">{p.birthYear ?? '–'}</td>
-                  <td className="p-3 text-slate-300">{p.strongFoot ?? '–'}</td>
+                <tr key={p.id} className="border-t border-line hover:bg-raised/40 transition-colors duration-150 ease-ui">
+                  <td className="p-3 text-fg">{p.firstName} {p.lastName}</td>
+                  <td className="p-3 num text-fg2">{p.birthYear ?? '–'}</td>
+                  <td className="p-3 text-fg2">{p.strongFoot ?? '–'}</td>
                   <td className="p-3">
                     {p.performanceGroup ? (
-                      <span className={`px-2 py-0.5 rounded border text-xs font-semibold ${GROUP_STYLE[p.performanceGroup]}`}>
+                      <span className={`inline-flex rounded-md px-2 py-0.5 text-[12px] font-medium ${GROUP_STYLE[p.performanceGroup]}`}>
                         {p.performanceGroup}
                       </span>
-                    ) : '–'}
+                    ) : (
+                      <span className="text-muted">–</span>
+                    )}
                   </td>
-                  <td className="p-3 text-slate-300">{p.nationality || '–'}</td>
-                  <td className="p-3 text-slate-300">
+                  <td className="p-3 text-fg2">{p.nationality || '–'}</td>
+                  <td className="p-3 text-fg2">
                     <div>{p.parentName || '–'}</div>
-                    <div className="flex gap-2 mt-1">
+                    <div className="flex flex-wrap gap-3 mt-1">
                       {p.parentPhone && (
-                        <a href={`tel:${p.parentPhone}`} className="text-blue-400 hover:underline inline-flex items-center gap-1 text-xs">
-                          <Phone size={12} /> {p.parentPhone}
+                        <a href={`tel:${p.parentPhone}`} className="inline-flex items-center gap-1.5 text-[12px] text-muted hover:text-fg transition-colors duration-150 ease-ui">
+                          <Phone size={14} strokeWidth={1.5} /> {p.parentPhone}
                         </a>
                       )}
                       {p.parentWhatsapp && /^\+?[0-9\s]+$/.test(p.parentWhatsapp) && (
@@ -204,20 +213,20 @@ export default function SpielberechtigungPage() {
                           href={`https://wa.me/${p.parentWhatsapp.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline inline-flex items-center gap-1 text-xs"
+                          className="inline-flex items-center gap-1.5 text-[12px] text-muted hover:text-fg transition-colors duration-150 ease-ui"
                         >
-                          <MessageCircle size={12} /> WhatsApp
+                          <MessageCircle size={14} strokeWidth={1.5} /> WhatsApp
                         </a>
                       )}
                     </div>
                   </td>
                   <td className="p-3">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => openEdit(p)} className="btn btn-secondary px-2 py-1" aria-label="Bearbeiten">
-                        <Pencil size={14} />
+                      <button onClick={() => openEdit(p)} className="btn btn-secondary h-8 w-8 px-0" aria-label="Bearbeiten">
+                        <Pencil size={16} strokeWidth={1.5} />
                       </button>
-                      <button onClick={() => setDeleteTarget(p)} className="btn btn-danger px-2 py-1" aria-label="Löschen">
-                        <Trash2 size={14} />
+                      <button onClick={() => setDeleteTarget(p)} className="btn btn-danger h-8 w-8 px-0" aria-label="Löschen">
+                        <Trash2 size={16} strokeWidth={1.5} />
                       </button>
                     </div>
                   </td>
@@ -232,12 +241,12 @@ export default function SpielberechtigungPage() {
       {modal && (
         <div className="modal-overlay" onClick={() => !saving && setModal(null)}>
           <div className="modal max-w-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-white">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-[22px] font-medium text-fg">
                 {modal.mode === 'edit' ? 'Spieler bearbeiten' : 'Spieler hinzufügen'}
               </h2>
-              <button onClick={() => setModal(null)} className="text-slate-400 hover:text-white" aria-label="Schließen">
-                <X size={22} />
+              <button onClick={() => setModal(null)} className="text-muted hover:text-fg transition-colors duration-150 ease-ui" aria-label="Schließen">
+                <X size={18} strokeWidth={1.5} />
               </button>
             </div>
 
@@ -272,12 +281,17 @@ export default function SpielberechtigungPage() {
                 </Field>
               </div>
 
-              {formError && <div className="p-3 bg-red-900/30 border border-red-700 rounded text-red-200 text-sm">{formError}</div>}
+              {formError && (
+                <div className="flex items-center gap-2 rounded-lg bg-neg/10 px-3 py-2.5 text-[13px] text-neg">
+                  <AlertTriangle size={16} strokeWidth={1.5} className="shrink-0" />
+                  {formError}
+                </div>
+              )}
 
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setModal(null)} className="flex-1 btn btn-secondary" disabled={saving}>Abbrechen</button>
                 <button type="submit" className="flex-1 btn btn-primary" disabled={saving}>
-                  {saving ? 'Speichert…' : 'Speichern'}
+                  {saving ? 'Speichert …' : 'Speichern'}
                 </button>
               </div>
             </form>
@@ -289,8 +303,8 @@ export default function SpielberechtigungPage() {
       {deleteTarget && (
         <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
           <div className="modal max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold text-white mb-2">Spieler löschen?</h2>
-            <p className="text-slate-300 mb-6">
+            <h2 className="text-[20px] font-medium text-fg mb-2">Spieler löschen?</h2>
+            <p className="text-fg2 mb-6">
               {deleteTarget.firstName} {deleteTarget.lastName} wird samt Anwesenheit und Nominierungen entfernt.
             </p>
             <div className="flex gap-3">
@@ -307,8 +321,8 @@ export default function SpielberechtigungPage() {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <span className="block text-sm font-medium text-white mb-2">{label}</span>
+      <span className="block text-[13px] text-fg2 mb-1.5">{label}</span>
       {children}
     </label>
   );
-            }
+}

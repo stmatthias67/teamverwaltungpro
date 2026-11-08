@@ -7,6 +7,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Check, Repeat } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Formationen. Koordinaten in % (x: links→rechts, y: 0 = oben/Gegner, 100 = unten/eigenes Tor)
@@ -38,6 +39,10 @@ const FORMATIONS = {
 };
 
 const GROUPS = ['A', 'B', 'C', 'D'];
+
+// Das Spielfeld ist der eine helle Moment: ruhiges Moosgrün, weiße Kreidelinien
+const FIELD_CLASS = 'bg-[#24422f]';
+const CHALK = 'rgba(255, 255, 255, 0.7)';
 
 export default function KaderTaktikPage() {
   const [players, setPlayers] = useState([]);
@@ -267,30 +272,23 @@ export default function KaderTaktikPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-4 border-slate-700 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
+    return <p className="py-12 text-center text-muted">Lädt …</p>;
   }
 
   if (events.length === 0) {
     return (
-      <div className="card text-center text-slate-400 py-10">
+      <div className="card text-center text-fg2 py-10">
         Noch kein Spiel oder Turnier angelegt. Lege zuerst einen Termin unter Events an.
       </div>
     );
   }
 
-  const field = formationDef.indoor ? 'bg-[#3b2314]' : 'bg-[#1e3a29]';
-  const lineColor = formationDef.indoor ? '#f6ad55' : '#48bb78';
-
   return (
     <div className="space-y-4">
       {/* Kopf: Spiel + Formation + Speichern */}
       <div className="card grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-        <label>
-          <span className="block text-sm text-slate-400 mb-1">Spiel</span>
+        <label className="block">
+          <span className="block text-[13px] text-fg2 mb-1.5">Spiel</span>
           <select value={eventId} onChange={(e) => setEventId(e.target.value)}>
             {events.map((ev) => (
               <option key={ev.id} value={ev.id}>
@@ -299,8 +297,8 @@ export default function KaderTaktikPage() {
             ))}
           </select>
         </label>
-        <label>
-          <span className="block text-sm text-slate-400 mb-1">Formation / Spielfeld</span>
+        <label className="block">
+          <span className="block text-[13px] text-fg2 mb-1.5">Formation / Spielfeld</span>
           <select value={formationKey} onChange={(e) => setFormationKey(e.target.value)}>
             {Object.entries(FORMATIONS).map(([k, f]) => (
               <option key={k} value={k}>{f.name}</option>
@@ -308,14 +306,24 @@ export default function KaderTaktikPage() {
           </select>
         </label>
         <button onClick={save} disabled={saving} className="btn btn-primary w-full">
-          {saving ? 'Speichert…' : 'Aufstellung speichern'}
+          {saving ? 'Speichert …' : 'Aufstellung speichern'}
         </button>
       </div>
 
-      {message && <div className="p-3 bg-green-900/30 border border-green-700 rounded text-green-200 text-sm">✅ {message}</div>}
-      {error && <div className="p-3 bg-red-900/30 border border-red-700 rounded text-red-200 text-sm">⚠️ {error}</div>}
+      {message && (
+        <div className="flex items-center gap-2 rounded-lg bg-accent/10 px-3 py-2.5 text-[13px] text-accent">
+          <Check size={16} strokeWidth={1.5} className="shrink-0" />
+          {message}
+        </div>
+      )}
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg bg-neg/10 px-3 py-2.5 text-[13px] text-neg">
+          <AlertTriangle size={16} strokeWidth={1.5} className="shrink-0" />
+          {error}
+        </div>
+      )}
 
-      <p className="text-xs text-slate-400">
+      <p className="text-[13px] text-muted">
         Tipp: Spieler anklicken (oder ziehen), dann Kasten oder Ersatzbank antippen. Spieler mit Rückennummer 1 steht automatisch im Tor.
         Ohne Platz auf dem Board = nicht dabei.
       </p>
@@ -324,18 +332,21 @@ export default function KaderTaktikPage() {
         {/* Links: Spielfeld + Ersatzbank oben */}
         <div className="lg:col-span-2 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="sm:col-span-2 text-sm text-slate-400 self-center">
+            <div className="sm:col-span-2 text-fg2 self-center">
               Spielfeld · {formationDef.name}
             </div>
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDropBench}
               onClick={handleBenchTap}
-              className={`rounded-lg border-2 border-dashed p-3 min-h-[72px] transition ${
-                selected ? 'border-primary cursor-pointer' : 'border-slate-600'
+              className={`rounded-lg border border-dashed p-3 min-h-[72px] transition-colors duration-150 ease-ui ${
+                selected ? 'border-accent cursor-pointer' : 'border-line-strong'
               }`}
             >
-              <div className="text-xs font-semibold text-slate-400 mb-2">🔄 Ersatzbank ({bench.length})</div>
+              <div className="flex items-center gap-1.5 text-[12px] font-medium text-muted mb-2">
+                <Repeat size={14} strokeWidth={1.5} />
+                Ersatzbank ({bench.length})
+              </div>
               <div className="flex flex-wrap gap-2">
                 {bench.map((pid) => (
                   <Chip
@@ -347,19 +358,19 @@ export default function KaderTaktikPage() {
                     active={selected === pid}
                   />
                 ))}
-                {bench.length === 0 && <span className="text-xs text-slate-500">leer</span>}
+                {bench.length === 0 && <span className="text-[12px] text-muted">leer</span>}
               </div>
             </div>
           </div>
 
           {/* Spielfeld */}
-          <div className={`relative w-full aspect-[3/4] sm:aspect-[4/3] rounded-lg border-2 border-slate-600 ${field} overflow-hidden`}>
+          <div className={`relative w-full aspect-[3/4] sm:aspect-[4/3] rounded-xl ${FIELD_CLASS} overflow-hidden`}>
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none">
-              <rect x="3" y="3" width="94" height="94" fill="none" stroke={lineColor} strokeWidth="0.4" />
-              <line x1="3" y1="50" x2="97" y2="50" stroke={lineColor} strokeWidth="0.4" />
-              <circle cx="50" cy="50" r="9" fill="none" stroke={lineColor} strokeWidth="0.4" />
-              <rect x="30" y="3" width="40" height="14" fill="none" stroke={lineColor} strokeWidth="0.4" />
-              <rect x="30" y="83" width="40" height="14" fill="none" stroke={lineColor} strokeWidth="0.4" />
+              <rect x="3" y="3" width="94" height="94" fill="none" stroke={CHALK} strokeWidth="0.4" />
+              <line x1="3" y1="50" x2="97" y2="50" stroke={CHALK} strokeWidth="0.4" />
+              <circle cx="50" cy="50" r="9" fill="none" stroke={CHALK} strokeWidth="0.4" />
+              <rect x="30" y="3" width="40" height="14" fill="none" stroke={CHALK} strokeWidth="0.4" />
+              <rect x="30" y="83" width="40" height="14" fill="none" stroke={CHALK} strokeWidth="0.4" />
             </svg>
 
             {formationDef.slots.map((slot) => {
@@ -371,12 +382,12 @@ export default function KaderTaktikPage() {
                   onDrop={(e) => handleDropSlot(e, slot.id)}
                   onClick={() => handleSlotTap(slot.id)}
                   style={{ left: `${slot.x}%`, top: `${slot.y}%`, transform: 'translate(-50%, -50%)' }}
-                  className={`absolute w-14 h-14 sm:w-16 sm:h-16 rounded-full flex flex-col items-center justify-center text-center cursor-pointer transition border-2 ${
+                  className={`absolute w-14 h-14 sm:w-16 sm:h-16 rounded-full flex flex-col items-center justify-center text-center cursor-pointer transition-colors duration-150 ease-ui border ${
                     pid
-                      ? 'bg-primary border-white text-white shadow-lg'
+                      ? 'bg-fg text-bg border-transparent'
                       : selected
-                        ? 'bg-slate-800/80 border-primary text-slate-200'
-                        : 'bg-slate-800/60 border-slate-500 text-slate-400'
+                        ? 'bg-transparent border-white text-white'
+                        : 'bg-transparent border-dashed border-white/40 text-white/70'
                   }`}
                 >
                   {pid ? (
@@ -385,11 +396,11 @@ export default function KaderTaktikPage() {
                       onDragStart={(e) => startDrag(e, pid)}
                       className="w-full h-full flex flex-col items-center justify-center"
                     >
-                      <span className="text-[10px] font-bold leading-none">{jerseys[pid] ?? '–'}</span>
-                      <span className="text-[9px] leading-tight px-1 truncate w-full">{nameOf(pid).split(' ')[0]}</span>
+                      <span className="num text-[12px] font-medium leading-none">{jerseys[pid] ?? '–'}</span>
+                      <span className="text-[10px] leading-tight px-1 truncate w-full">{nameOf(pid).split(' ')[0]}</span>
                     </div>
                   ) : (
-                    <span className="text-[11px] font-bold">{slot.label}</span>
+                    <span className="text-[11px] font-medium">{slot.label}</span>
                   )}
                 </div>
               );
@@ -403,15 +414,15 @@ export default function KaderTaktikPage() {
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDropPool}
         >
-          <div className="text-sm text-slate-400">
-            Kader · {notNominated.length} nicht dabei
+          <div className="text-fg2">
+            Kader · <span className="num">{notNominated.length}</span> nicht dabei
           </div>
           {[...GROUPS, 'none'].map((g) => {
             const list = groupedPlayers[g];
             if (!list || list.length === 0) return null;
             return (
               <div key={g} className="card !p-3">
-                <div className="text-xs font-semibold text-slate-400 mb-2">
+                <div className="text-[12px] font-medium text-muted mb-2">
                   {g === 'none' ? 'Ohne Gruppe' : `Gruppe ${g}`}
                 </div>
                 <div className="space-y-1">
@@ -424,14 +435,12 @@ export default function KaderTaktikPage() {
                         draggable
                         onDragStart={(e) => startDrag(e, p.id)}
                         onClick={() => setSelected(selected === p.id ? null : p.id)}
-                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md cursor-grab transition border ${
+                        className={`flex items-center gap-2 px-2 h-9 rounded-lg border cursor-grab transition-colors duration-150 ease-ui ${
                           selected === p.id
-                            ? 'border-primary bg-primary/20'
+                            ? 'border-accent bg-accent/10'
                             : isSlot
-                              ? 'border-green-800 bg-green-900/30'
-                              : bench.includes(p.id)
-                                ? 'border-yellow-800 bg-yellow-900/20'
-                                : 'border-slate-700 bg-slate-800/40 hover:border-slate-500'
+                              ? 'border-transparent bg-raised'
+                              : 'border-transparent hover:bg-raised'
                         }`}
                       >
                         <input
@@ -442,10 +451,10 @@ export default function KaderTaktikPage() {
                           value={jerseys[p.id] ?? ''}
                           onClick={(e) => e.stopPropagation()}
                           onChange={(e) => setJersey(p.id, e.target.value)}
-                          className="!w-12 !p-1 text-center text-sm"
+                          className="!w-12 !h-7 !p-1 text-center text-[13px] num"
                         />
-                        <span className="flex-1 text-sm text-white truncate">{p.firstName} {p.lastName}</span>
-                        <span className="text-[10px] text-slate-400">
+                        <span className="flex-1 truncate text-fg">{p.firstName} {p.lastName}</span>
+                        <span className="text-[12px] text-muted">
                           {isSlot ? 'Feld' : bench.includes(p.id) ? 'Bank' : onBoard ? '' : 'nein'}
                         </span>
                       </div>
@@ -455,7 +464,7 @@ export default function KaderTaktikPage() {
               </div>
             );
           })}
-          {players.length === 0 && <div className="text-sm text-slate-400">Noch keine Spieler im Kader.</div>}
+          {players.length === 0 && <div className="text-fg2">Noch keine Spieler im Kader.</div>}
         </div>
       </div>
     </div>
@@ -468,11 +477,11 @@ function Chip({ label, number, onClick, onDragStart, active }) {
       draggable
       onDragStart={onDragStart}
       onClick={onClick}
-      className={`px-2.5 py-1 rounded-md text-sm cursor-grab border transition ${
-        active ? 'border-primary bg-primary/30 text-white' : 'border-yellow-800 bg-yellow-900/30 text-white'
+      className={`flex items-center h-8 px-2.5 rounded-lg text-[13px] text-fg cursor-grab border transition-colors duration-150 ease-ui ${
+        active ? 'border-accent bg-accent/10' : 'border-line bg-raised'
       }`}
     >
-      {number != null && <span className="font-bold mr-1">#{number}</span>}
+      {number != null && <span className="num text-muted mr-1.5">#{number}</span>}
       {label}
     </div>
   );

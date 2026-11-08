@@ -1,23 +1,16 @@
 // app/squad/page.js
 /**
- * Squad/Kader Page - ÜBERARBEITETE VERSION
+ * Squad/Kader Page
  * Spielerverwaltung mit Modal-Form für Hinzufügen
- * 
- * Neue Felder:
- * - firstName (Vorname)
- * - lastName (Nachname)
- * - parentName (Name des Elternteils)
- * - parentPhone (Telefon)
- * - parentWhatsapp (WhatsApp oder Username)
- * 
- * KEINE jerseyNumber mehr
- * KEIN status mehr (wird pro-Event in Nomination gespeichert)
+ *
+ * Felder: firstName, lastName, parentName, parentPhone, parentWhatsapp
+ * Status wird pro Event in Nomination gespeichert, nicht hier.
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Plus, Search, Phone, MessageCircle, AlertCircle } from 'lucide-react';
 
 export default function SquadPage() {
   const [players, setPlayers] = useState([]);
@@ -81,7 +74,7 @@ export default function SquadPage() {
 
   async function handleAddPlayer(e) {
     e.preventDefault();
-    
+
     // Validate
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -149,111 +142,125 @@ export default function SquadPage() {
     }
   }
 
+  const closeModal = () => {
+    setShowModal(false);
+    setFormErrors({});
+  };
+
+  const inputClass = (name) => (formErrors[name] ? 'border-neg' : '');
+
+  const FIELDS = [
+    { name: 'firstName', label: 'Vorname', placeholder: 'z.B. Max', required: true },
+    { name: 'lastName', label: 'Nachname', placeholder: 'z.B. Mustermann', required: true },
+    { name: 'parentName', label: 'Name eines Elternteils', placeholder: 'z.B. Anna Mustermann', required: true },
+    { name: 'parentPhone', label: 'Telefonnummer', placeholder: 'z.B. +49 123 456789', type: 'tel', required: true },
+    {
+      name: 'parentWhatsapp',
+      label: 'WhatsApp-Nummer oder Benutzername',
+      placeholder: 'z.B. +49 123 456789 oder anna.mustermann',
+      required: true,
+    },
+  ];
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <p className="text-muted py-12 text-center">Lädt …</p>;
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-4xl font-bold text-white">Kader</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition"
-        >
-          + Spieler hinzufügen
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-[28px] leading-[1.15] font-medium text-fg">Kader</h1>
+          <p className="text-fg2 mt-1">{players.length} Spieler</p>
+        </div>
+        <button onClick={() => setShowModal(true)} className="btn btn-primary">
+          <Plus size={16} strokeWidth={1.5} />
+          Spieler hinzufügen
         </button>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="p-4 bg-red-500/20 border border-red-500 rounded-lg text-red-200">
+        <div className="flex items-center gap-2 p-4 rounded-lg border border-neg/40 text-neg">
+          <AlertCircle size={16} strokeWidth={1.5} className="shrink-0" />
           {error}
         </div>
       )}
 
       {/* Search */}
-      <div>
+      <div className="relative">
+        <Search size={16} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
         <input
           type="text"
-          placeholder="Nach Name oder Eltern suchen..."
+          placeholder="Nach Name oder Eltern suchen"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 bg-card border border-slate-700 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:border-primary"
+          className="pl-9"
         />
       </div>
 
       {/* Players List */}
       {filteredPlayers.length === 0 ? (
-        <div className="text-center py-12 text-slate-400">
+        <div className="text-center py-12 text-fg2">
           {players.length === 0 ? 'Noch keine Spieler hinzugefügt' : 'Keine Spieler gefunden'}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filteredPlayers.map((player) => (
-            <div
-              key={player.id}
-              className="p-4 bg-card border border-slate-700 rounded-lg hover:border-primary/50 transition flex justify-between items-start"
-            >
-              <div className="flex-1">
+            <div key={player.id} className="card py-4 px-4 flex justify-between items-start gap-4">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <span className="text-sm font-bold text-primary">
-                      {player.firstName[0]}{player.lastName[0]}
+                  <div className="w-9 h-9 rounded-full bg-raised flex items-center justify-center shrink-0">
+                    <span className="text-[13px] font-medium text-fg2">
+                      {player.firstName[0]}
+                      {player.lastName[0]}
                     </span>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-white">
+                  <div className="min-w-0">
+                    <h3 className="text-[15px] font-medium text-fg truncate">
                       {player.firstName} {player.lastName}
                     </h3>
-                    <p className="text-sm text-slate-400">
-                      Eltern: {player.parentName}
-                    </p>
+                    <p className="text-[13px] text-muted truncate">Eltern: {player.parentName}</p>
                   </div>
                 </div>
 
                 {/* Contact Info */}
-                <div className="mt-2 text-sm text-slate-300 space-y-1">
-                  {player.parentPhone && (
-                    <p>
-                      📞{' '}
-                      <a
-                        href={`tel:${player.parentPhone}`}
-                        className="hover:text-primary text-blue-400"
-                      >
-                        {player.parentPhone}
-                      </a>
-                    </p>
-                  )}
-                  {player.parentWhatsapp && (
-                    <p>
-                      💬{' '}
-                      {player.parentWhatsapp.includes('@') ? (
-                        <span>{player.parentWhatsapp}</span>
-                      ) : (
-                        <a
-                          href={`https://wa.me/${player.parentWhatsapp}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-primary text-green-400"
-                        >
-                          {player.parentWhatsapp}
+                {(player.parentPhone || player.parentWhatsapp) && (
+                  <div className="mt-3 pl-12 space-y-1.5 text-[13px] text-fg2">
+                    {player.parentPhone && (
+                      <p className="flex items-center gap-2">
+                        <Phone size={14} strokeWidth={1.5} className="shrink-0 text-muted" />
+                        <a href={`tel:${player.parentPhone}`} className="hover:text-fg transition-colors duration-150 ease-ui">
+                          {player.parentPhone}
                         </a>
-                      )}
-                    </p>
-                  )}
-                </div>
+                      </p>
+                    )}
+                    {player.parentWhatsapp && (
+                      <p className="flex items-center gap-2">
+                        <MessageCircle size={14} strokeWidth={1.5} className="shrink-0 text-muted" />
+                        {player.parentWhatsapp.includes('@') ? (
+                          <span>{player.parentWhatsapp}</span>
+                        ) : (
+                          <a
+                            href={`https://wa.me/${player.parentWhatsapp}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-fg transition-colors duration-150 ease-ui"
+                          >
+                            {player.parentWhatsapp}
+                          </a>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Delete Button */}
               <button
                 onClick={() => setDeleteConfirm(player.id)}
-                className="ml-4 px-3 py-1 text-red-400 hover:bg-red-500/20 rounded text-sm transition"
+                className="btn btn-secondary h-8 px-3 text-[13px] shrink-0"
               >
                 Löschen
               </button>
@@ -264,23 +271,17 @@ export default function SquadPage() {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card border border-slate-700 rounded-lg p-6 max-w-sm">
-            <h2 className="text-xl font-bold text-white mb-4">Spieler löschen?</h2>
-            <p className="text-slate-300 mb-6">
+        <div className="modal-overlay">
+          <div className="modal max-w-sm">
+            <h2 className="text-xl font-medium text-fg mb-2">Spieler löschen?</h2>
+            <p className="text-fg2 mb-6">
               Dieser Spieler wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
             </p>
             <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
-              >
+              <button onClick={() => setDeleteConfirm(null)} className="flex-1 btn btn-secondary">
                 Abbrechen
               </button>
-              <button
-                onClick={() => handleDeletePlayer(deleteConfirm)}
-                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
-              >
+              <button onClick={() => handleDeletePlayer(deleteConfirm)} className="flex-1 btn btn-danger">
                 Löschen
               </button>
             </div>
@@ -290,147 +291,44 @@ export default function SquadPage() {
 
       {/* Add Player Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card border border-slate-700 rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div className="modal-overlay">
+          <div className="modal max-w-lg">
             {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-white">Spieler hinzufügen</h2>
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  setFormErrors({});
-                }}
-                className="text-slate-400 hover:text-white"
-              >
-                <X size={24} />
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-medium text-fg">Spieler hinzufügen</h2>
+              <button onClick={closeModal} className="text-muted hover:text-fg transition-colors duration-150 ease-ui" aria-label="Schließen">
+                <X size={18} strokeWidth={1.5} />
               </button>
             </div>
 
             {/* Form */}
             <form onSubmit={handleAddPlayer} className="space-y-4">
-              {/* Vorname */}
-              <div>
-                <label className="block text-sm font-medium text-white mb-1">
-                  Vorname *
-                </label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  placeholder="z.B. Max"
-                  className={`w-full px-3 py-2 bg-main border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-primary ${
-                    formErrors.firstName ? 'border-red-500' : 'border-slate-700'
-                  }`}
-                />
-                {formErrors.firstName && (
-                  <p className="text-red-400 text-sm mt-1">{formErrors.firstName}</p>
-                )}
-              </div>
-
-              {/* Nachname */}
-              <div>
-                <label className="block text-sm font-medium text-white mb-1">
-                  Nachname *
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  placeholder="z.B. Mustermann"
-                  className={`w-full px-3 py-2 bg-main border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-primary ${
-                    formErrors.lastName ? 'border-red-500' : 'border-slate-700'
-                  }`}
-                />
-                {formErrors.lastName && (
-                  <p className="text-red-400 text-sm mt-1">{formErrors.lastName}</p>
-                )}
-              </div>
-
-              {/* Elternname */}
-              <div>
-                <label className="block text-sm font-medium text-white mb-1">
-                  Name eines Elternteils *
-                </label>
-                <input
-                  type="text"
-                  name="parentName"
-                  value={formData.parentName}
-                  onChange={handleInputChange}
-                  placeholder="z.B. Anna Mustermann"
-                  className={`w-full px-3 py-2 bg-main border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-primary ${
-                    formErrors.parentName ? 'border-red-500' : 'border-slate-700'
-                  }`}
-                />
-                {formErrors.parentName && (
-                  <p className="text-red-400 text-sm mt-1">{formErrors.parentName}</p>
-                )}
-              </div>
-
-              {/* Telefon */}
-              <div>
-                <label className="block text-sm font-medium text-white mb-1">
-                  Telefonnummer *
-                </label>
-                <input
-                  type="tel"
-                  name="parentPhone"
-                  value={formData.parentPhone}
-                  onChange={handleInputChange}
-                  placeholder="z.B. +49 123 456789"
-                  className={`w-full px-3 py-2 bg-main border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-primary ${
-                    formErrors.parentPhone ? 'border-red-500' : 'border-slate-700'
-                  }`}
-                />
-                {formErrors.parentPhone && (
-                  <p className="text-red-400 text-sm mt-1">{formErrors.parentPhone}</p>
-                )}
-              </div>
-
-              {/* WhatsApp */}
-              <div>
-                <label className="block text-sm font-medium text-white mb-1">
-                  WhatsApp-Nummer oder Benutzername *
-                </label>
-                <input
-                  type="text"
-                  name="parentWhatsapp"
-                  value={formData.parentWhatsapp}
-                  onChange={handleInputChange}
-                  placeholder="z.B. +49 123 456789 oder anna.mustermann"
-                  className={`w-full px-3 py-2 bg-main border rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-primary ${
-                    formErrors.parentWhatsapp ? 'border-red-500' : 'border-slate-700'
-                  }`}
-                />
-                {formErrors.parentWhatsapp && (
-                  <p className="text-red-400 text-sm mt-1">{formErrors.parentWhatsapp}</p>
-                )}
-              </div>
+              {FIELDS.map((field) => (
+                <div key={field.name}>
+                  <label className="block text-sm text-fg2 mb-1.5">{field.label} *</label>
+                  <input
+                    type={field.type || 'text'}
+                    name={field.name}
+                    value={formData[field.name]}
+                    onChange={handleInputChange}
+                    placeholder={field.placeholder}
+                    className={inputClass(field.name)}
+                  />
+                  {formErrors[field.name] && <p className="text-neg text-sm mt-1">{formErrors[field.name]}</p>}
+                </div>
+              ))}
 
               {/* Submit Error */}
               {formErrors.submit && (
-                <div className="p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-200 text-sm">
-                  {formErrors.submit}
-                </div>
+                <div className="p-3 rounded-lg border border-neg/40 text-neg text-sm">{formErrors.submit}</div>
               )}
 
               {/* Buttons */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setFormErrors({});
-                  }}
-                  className="flex-1 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
-                >
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={closeModal} className="flex-1 btn btn-secondary">
                   Abbrechen
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition font-medium"
-                >
+                <button type="submit" className="flex-1 btn btn-primary">
                   Spieler hinzufügen
                 </button>
               </div>

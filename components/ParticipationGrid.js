@@ -6,6 +6,7 @@
 // Zeitraum-Filter, Zähler und Quote berechnen sich nur auf die sichtbaren Termine.
 
 import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, X } from 'lucide-react';
 
 const SCORE_RE = /^\s*(\d{1,2})\s*:\s*(\d{1,2})\s*$/;
 
@@ -145,11 +146,7 @@ export default function ParticipationGrid({ eventTypes, showScore = false, empty
     new Date(d).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-4 border-slate-700 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
+    return <p className="py-12 text-center text-muted">Lädt …</p>;
   }
 
   return (
@@ -157,11 +154,11 @@ export default function ParticipationGrid({ eventTypes, showScore = false, empty
       {/* Zeitraum-Filter */}
       <div className="card flex flex-col sm:flex-row gap-3 sm:items-end">
         <label className="flex-1">
-          <span className="block text-sm text-slate-400 mb-1">Von</span>
+          <span className="block text-[13px] text-fg2 mb-1.5">Von</span>
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         </label>
         <label className="flex-1">
-          <span className="block text-sm text-slate-400 mb-1">Bis</span>
+          <span className="block text-[13px] text-fg2 mb-1.5">Bis</span>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
         <button
@@ -171,42 +168,47 @@ export default function ParticipationGrid({ eventTypes, showScore = false, empty
         >
           Zeitraum zurücksetzen
         </button>
-        <div className="text-sm text-slate-400 sm:pb-2">
+        <div className="text-fg2 num sm:pb-2">
           {columns.length} {columns.length === 1 ? 'Termin' : 'Termine'} im Zeitraum
         </div>
       </div>
 
       {error && (
-        <div className="p-3 bg-red-900/30 border border-red-700 rounded text-red-200 text-sm flex justify-between">
-          <span>⚠️ {error}</span>
-          <button onClick={() => setError(null)} className="text-red-200 hover:text-white">×</button>
+        <div className="flex items-center justify-between gap-3 rounded-lg bg-neg/10 px-3 py-2.5 text-[13px] text-neg">
+          <span className="flex items-center gap-2">
+            <AlertTriangle size={16} strokeWidth={1.5} className="shrink-0" />
+            {error}
+          </span>
+          <button onClick={() => setError(null)} className="text-neg hover:opacity-80" aria-label="Meldung schließen">
+            <X size={16} strokeWidth={1.5} />
+          </button>
         </div>
       )}
 
       {columns.length === 0 ? (
-        <div className="card text-center text-slate-400 py-10">{emptyText}</div>
+        <div className="card text-center text-fg2 py-10">{emptyText}</div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-700">
+        <div className="overflow-x-auto rounded-xl border border-line">
           <table className="text-sm border-collapse">
             <thead className="bg-card">
               <tr>
-                <th className="sticky left-0 bg-card p-3 text-left text-slate-400 font-medium min-w-[180px] z-10">Spieler</th>
+                <th className="sticky left-0 bg-card p-3 text-left text-[12px] font-medium text-muted min-w-[180px] z-10">Spieler</th>
                 {columns.map((c) => (
-                  <th key={c.id} className="p-2 text-center font-medium text-slate-300 min-w-[96px] align-top">
-                    <div className="text-xs text-slate-400">{fmtDate(c.date)}</div>
-                    <div className="text-xs truncate max-w-[120px] mx-auto" title={c.title}>{c.title}</div>
+                  <th key={c.id} className="p-2 text-center font-medium text-fg2 min-w-[96px] align-top">
+                    <div className="text-[12px] text-muted num">{fmtDate(c.date)}</div>
+                    <div className="text-[12px] truncate max-w-[120px] mx-auto" title={c.title}>{c.title}</div>
                   </th>
                 ))}
-                <th className="p-3 text-center text-slate-400 font-medium">Anw.</th>
-                <th className="p-3 text-center text-slate-400 font-medium">Abw.</th>
-                <th className="p-3 text-center text-slate-400 font-medium">Quote</th>
+                <th className="p-3 text-center text-[12px] font-medium text-muted">Anw.</th>
+                <th className="p-3 text-center text-[12px] font-medium text-muted">Abw.</th>
+                <th className="p-3 text-center text-[12px] font-medium text-muted">Quote</th>
               </tr>
             </thead>
 
             {showScore && (
               <tbody>
-                <tr className="border-t border-slate-700 bg-slate-800/40">
-                  <td className="sticky left-0 bg-slate-800/40 p-2 text-slate-400 text-xs z-10">Ergebnis (00:00)</td>
+                <tr className="border-t border-line bg-raised/50">
+                  <td className="sticky left-0 bg-raised p-2 text-muted text-[12px] z-10">Ergebnis (00:00)</td>
                   {columns.map((c) => {
                     const shown = c.scoreHome != null && c.scoreAway != null
                       ? `${String(c.scoreHome).padStart(2, '0')}:${String(c.scoreAway).padStart(2, '0')}`
@@ -218,7 +220,7 @@ export default function ParticipationGrid({ eventTypes, showScore = false, empty
                           type="text"
                           inputMode="numeric"
                           placeholder="00:00"
-                          className="w-20 text-center"
+                          className="w-20 text-center num"
                           value={draft !== undefined ? draft : shown}
                           onChange={(e) => setScoreDrafts({ ...scoreDrafts, [c.id]: e.target.value })}
                           onBlur={() => saveScore(c)}
@@ -236,20 +238,20 @@ export default function ParticipationGrid({ eventTypes, showScore = false, empty
               {players.map((p) => {
                 const s = statsById.get(p.id) || { present: 0, absent: 0, quota: null };
                 return (
-                  <tr key={p.id} className="border-t border-slate-700">
-                    <td className="sticky left-0 bg-main p-3 font-medium text-white whitespace-nowrap z-10">
+                  <tr key={p.id} className="border-t border-line hover:bg-raised/40 transition-colors duration-150 ease-ui">
+                    <td className="sticky left-0 bg-bg p-3 text-fg whitespace-nowrap z-10">
                       {p.firstName} {p.lastName}
-                      {p.performanceGroup && <span className="ml-2 text-xs text-slate-400">{p.performanceGroup}</span>}
+                      {p.performanceGroup && <span className="ml-2 text-[12px] text-muted">{p.performanceGroup}</span>}
                     </td>
                     {columns.map((c) => {
                       const st = statusMap.get(`${c.id}|${p.id}`);
                       return (
                         <td key={c.id} className="p-2 text-center">
-                          <div className="inline-flex rounded-md overflow-hidden border border-slate-600">
+                          <div className="inline-flex overflow-hidden rounded-lg border border-line">
                             <button
                               onClick={() => setStatus(c.id, p.id, st, 'PRESENT')}
-                              className={`px-2.5 py-1 text-xs font-bold transition ${
-                                st === 'PRESENT' ? 'bg-green-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-green-900/60'
+                              className={`h-7 w-9 text-[13px] transition-colors duration-150 ease-ui ${
+                                st === 'PRESENT' ? 'bg-accent/20 text-accent font-medium' : 'text-muted hover:text-fg hover:bg-raised'
                               }`}
                               aria-label="anwesend"
                             >
@@ -257,8 +259,8 @@ export default function ParticipationGrid({ eventTypes, showScore = false, empty
                             </button>
                             <button
                               onClick={() => setStatus(c.id, p.id, st, 'ABSENT')}
-                              className={`px-2.5 py-1 text-xs font-bold transition ${
-                                st === 'ABSENT' ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-red-900/60'
+                              className={`h-7 w-9 text-[13px] transition-colors duration-150 ease-ui ${
+                                st === 'ABSENT' ? 'bg-neg/15 text-neg font-medium' : 'text-muted hover:text-fg hover:bg-raised'
                               }`}
                               aria-label="abwesend"
                             >
@@ -268,16 +270,16 @@ export default function ParticipationGrid({ eventTypes, showScore = false, empty
                         </td>
                       );
                     })}
-                    <td className="p-3 text-center text-green-400 font-semibold">{s.present}</td>
-                    <td className="p-3 text-center text-red-400 font-semibold">{s.absent}</td>
+                    <td className="p-3 text-center num text-fg">{s.present}</td>
+                    <td className="p-3 text-center num text-fg2">{s.absent}</td>
                     <td className="p-3 text-center min-w-[120px]">
                       {s.quota === null ? (
-                        <span className="text-slate-500">–</span>
+                        <span className="text-muted">–</span>
                       ) : (
                         <div>
-                          <div className="font-bold text-white">{s.quota} %</div>
-                          <div className="h-1.5 bg-slate-700 rounded mt-1 overflow-hidden">
-                            <div className="h-full bg-primary" style={{ width: `${s.quota}%` }} />
+                          <div className="num text-fg">{s.quota} %</div>
+                          <div className="h-1 rounded-full bg-raised mt-1.5 overflow-hidden">
+                            <div className="h-full rounded-full bg-accent" style={{ width: `${s.quota}%` }} />
                           </div>
                         </div>
                       )}

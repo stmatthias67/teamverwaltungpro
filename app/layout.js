@@ -4,35 +4,69 @@ import './globals.css';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Users, Package, CalendarDays, LayoutDashboard, Settings, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Haupttabs: Untertabs liegen in den jeweiligen Layouts (teammanagement/, organisation/)
 const MAIN_TABS = [
-  { href: '/teammanagement', label: 'Teammanagement', icon: '⚽', match: '/teammanagement' },
-  { href: '/organisation/material', label: 'Organisation', icon: '📦', match: '/organisation' },
+  { href: '/teammanagement', label: 'Teammanagement', Icon: Users, match: '/teammanagement' },
+  { href: '/organisation/material', label: 'Organisation', Icon: Package, match: '/organisation' },
 ];
 
 // Zusatzseiten, die nicht im Spec-Baum stehen, aber erhalten bleiben
 const EXTRA_LINKS = [
-  { href: '/', label: 'Dashboard', icon: '📊' },
-  { href: '/events', label: 'Events', icon: '📅' },
-  { href: '/settings', label: 'Einstellungen', icon: '⚙️' },
+  { href: '/', label: 'Dashboard', Icon: LayoutDashboard },
+  { href: '/events', label: 'Events', Icon: CalendarDays },
+  { href: '/settings', label: 'Einstellungen', Icon: Settings },
 ];
+
+const SETTINGS_KEY = 'themeSettings';
+
+function readStoredMode() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    return stored.colorMode || 'DARK';
+  } catch {
+    return 'DARK';
+  }
+}
+
+function applyMode(mode) {
+  const root = document.documentElement;
+  const isLight =
+    mode === 'LIGHT' || (mode === 'SYSTEM' && window.matchMedia('(prefers-color-scheme: light)').matches);
+  root.classList.toggle('light', isLight);
+  root.classList.toggle('dark', !isLight);
+}
+
+function saveMode(mode) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...stored, colorMode: mode }));
+  } catch {
+    // Speicher nicht verfügbar: Theme gilt nur für diese Sitzung
+  }
+}
 
 export default function RootLayout({ children }) {
   const pathname = usePathname() || '/';
   const [collapsed, setCollapsed] = useState(false);
+  const [mode, setMode] = useState('DARK');
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty('--color-primary', '#2ea043');
-    root.style.setProperty('--color-secondary', '#1f6feb');
-    root.style.setProperty('--color-accent', '#58a6ff');
-    root.style.setProperty('--color-bg-main', '#0d1117');
-    root.style.setProperty('--color-bg-card', '#161b22');
-    root.classList.add('dark');
+    const stored = readStoredMode();
+    setMode(stored);
+    applyMode(stored);
   }, []);
 
+  function toggleMode() {
+    const next = document.documentElement.classList.contains('light') ? 'DARK' : 'LIGHT';
+    setMode(next);
+    saveMode(next);
+    applyMode(next);
+  }
+
   const isActive = (match) => pathname.startsWith(match);
+  const isLight = mode === 'LIGHT';
 
   return (
     <html lang="de">
@@ -41,77 +75,103 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body>
-        <div className="flex h-screen bg-main text-white">
+        <div className="flex h-screen bg-bg text-fg">
           {/* Desktop/Tablet Sidebar */}
           <aside
-            className={`hidden md:flex flex-col ${collapsed ? 'w-20' : 'w-64'} bg-card border-r border-slate-700 transition-all duration-300`}
+            className={`hidden md:flex flex-col shrink-0 ${collapsed ? 'w-16' : 'w-60'} bg-deep border-r border-line transition-[width] duration-300 ease-ui`}
           >
-            <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-              <h1 className="font-bold text-primary text-lg truncate">
-                {collapsed ? 'TM' : '⚽ SV Schloßberg'}
-              </h1>
-              <button onClick={() => setCollapsed(!collapsed)} className="p-1 hover:bg-slate-700 rounded" aria-label="Sidebar umschalten">
-                {collapsed ? '►' : '◄'}
+            <div className="h-14 px-4 flex items-center justify-between">
+              {!collapsed && (
+                <span className="font-medium text-fg text-[15px] truncate">SV Schloßberg</span>
+              )}
+              <button
+                type="button"
+                onClick={() => setCollapsed(!collapsed)}
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-muted hover:text-fg hover:bg-raised transition-colors duration-150 ease-ui"
+                aria-label="Sidebar umschalten"
+              >
+                {collapsed ? <ChevronRight size={16} strokeWidth={1.5} /> : <ChevronLeft size={16} strokeWidth={1.5} />}
               </button>
             </div>
 
-            <nav className="flex-1 p-3 space-y-2">
-              {MAIN_TABS.map((tab) => (
-                <Link
-                  key={tab.href}
-                  href={tab.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                    isActive(tab.match) ? 'bg-primary text-white' : 'text-slate-300 hover:bg-slate-700'
-                  }`}
-                >
-                  <span className="text-xl">{tab.icon}</span>
-                  {!collapsed && <span className="font-medium">{tab.label}</span>}
-                </Link>
-              ))}
-
-              <div className="pt-4 mt-4 border-t border-slate-700 space-y-1">
-                {EXTRA_LINKS.map((link) => (
+            <nav className="flex-1 px-2 pt-2 flex flex-col">
+              <div className="space-y-1">
+                {MAIN_TABS.map(({ href, label, Icon, match }) => (
                   <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition ${
-                      pathname === link.href ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700'
+                    key={href}
+                    href={href}
+                    title={collapsed ? label : undefined}
+                    className={`flex items-center gap-2.5 h-9 px-2.5 rounded-lg transition-colors duration-150 ease-ui ${
+                      isActive(match) ? 'bg-raised text-fg' : 'text-fg2 hover:text-fg hover:bg-raised'
                     }`}
                   >
-                    <span>{link.icon}</span>
-                    {!collapsed && <span>{link.label}</span>}
+                    <Icon size={16} strokeWidth={1.5} className="shrink-0" />
+                    {!collapsed && <span className="truncate">{label}</span>}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-line space-y-1">
+                {EXTRA_LINKS.map(({ href, label, Icon }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    title={collapsed ? label : undefined}
+                    className={`flex items-center gap-2.5 h-9 px-2.5 rounded-lg text-[13px] transition-colors duration-150 ease-ui ${
+                      pathname === href ? 'bg-raised text-fg' : 'text-muted hover:text-fg hover:bg-raised'
+                    }`}
+                  >
+                    <Icon size={16} strokeWidth={1.5} className="shrink-0" />
+                    {!collapsed && <span className="truncate">{label}</span>}
                   </Link>
                 ))}
               </div>
             </nav>
+
+            <div className="p-2 border-t border-line">
+              <button
+                type="button"
+                onClick={toggleMode}
+                className="w-full h-9 px-2.5 flex items-center gap-2.5 rounded-lg text-[13px] text-muted hover:text-fg hover:bg-raised transition-colors duration-150 ease-ui"
+                aria-label={isLight ? 'Dunkles Design aktivieren' : 'Helles Design aktivieren'}
+              >
+                {isLight ? <Moon size={16} strokeWidth={1.5} className="shrink-0" /> : <Sun size={16} strokeWidth={1.5} className="shrink-0" />}
+                {!collapsed && <span>{isLight ? 'Dunkel' : 'Hell'}</span>}
+              </button>
+            </div>
           </aside>
 
           {/* Hauptbereich */}
-          <main className="flex-1 overflow-y-auto pb-24 md:pb-0">
-            <div className="p-4 md:p-6 max-w-7xl mx-auto">{children}</div>
+          <main className="flex-1 min-w-0 overflow-y-auto pb-20 md:pb-0">
+            <div className="mx-auto max-w-[1440px] px-4 py-6 md:px-8 md:py-8">{children}</div>
           </main>
         </div>
 
         {/* Mobile Bottom Navigation (< 768px) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-slate-700 flex z-40">
-          {MAIN_TABS.map((tab) => (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-deep border-t border-line flex z-40">
+          {MAIN_TABS.map(({ href, label, Icon, match }) => (
             <Link
-              key={tab.href}
-              href={tab.href}
-              className={`flex-1 flex flex-col items-center justify-center text-xs gap-1 ${
-                isActive(tab.match) ? 'text-primary' : 'text-slate-400'
+              key={href}
+              href={href}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 text-[12px] transition-colors duration-150 ease-ui ${
+                isActive(match) ? 'text-fg' : 'text-muted'
               }`}
             >
-              <span className="text-xl">{tab.icon}</span>
-              {tab.label}
+              <Icon size={18} strokeWidth={1.5} />
+              {label}
             </Link>
           ))}
-          <Link href="/settings" className={`flex-1 flex flex-col items-center justify-center text-xs gap-1 ${pathname.startsWith('/settings') ? 'text-primary' : 'text-slate-400'}`}>
-            <span className="text-xl">⚙️</span>
+          <Link
+            href="/settings"
+            className={`flex-1 flex flex-col items-center justify-center gap-1 text-[12px] transition-colors duration-150 ease-ui ${
+              pathname.startsWith('/settings') ? 'text-fg' : 'text-muted'
+            }`}
+          >
+            <Settings size={18} strokeWidth={1.5} />
             Einstellungen
           </Link>
         </nav>
       </body>
     </html>
   );
-            }
+}

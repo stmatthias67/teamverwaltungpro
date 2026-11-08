@@ -1,0 +1,8 @@
+node_modules
+.env
+.env.local
+.next
+
+# Ergänzt: Build-Ausgabe und Abhängigkeiten
+.next/
+node_modules/

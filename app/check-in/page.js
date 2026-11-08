@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Check, X, AlertCircle } from 'lucide-react';
 
 export default function CheckInPage() {
   const [events, setEvents] = useState([]);
@@ -84,27 +85,24 @@ export default function CheckInPage() {
   };
 
   const total = stats.present + stats.absent || 1;
+  const rate = Math.round((stats.present / total) * 100);
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-4xl font-bold mb-2">📋 Check-In & Anwesenheit</h1>
-        <p className="text-gray-400">Erfassen Sie die Anwesenheit für Trainings und Spiele</p>
+        <h1 className="text-[28px] leading-[1.15] font-medium text-fg">Check-in</h1>
+        <p className="text-fg2 mt-1">Anwesenheit für Trainings und Spiele erfassen</p>
       </div>
 
       {/* Event Selection */}
       <div>
-        <label className="block text-sm font-semibold mb-2">Event wählen:</label>
-        <select
-          value={selectedEventId}
-          onChange={(e) => setSelectedEventId(e.target.value)}
-          className="input-field"
-        >
-          <option value="">-- Bitte wählen --</option>
+        <label className="block text-sm text-fg2 mb-1.5">Event</label>
+        <select value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+          <option value="">Bitte wählen</option>
           {events.map((event) => (
-            <key key={event.id}>
+            <option key={event.id} value={event.id}>
               {event.title} ({new Date(event.date).toLocaleDateString('de-DE')})
-            </key>
+            </option>
           ))}
         </select>
       </div>
@@ -112,58 +110,48 @@ export default function CheckInPage() {
       {selectedEventId && (
         <>
           {/* Statistics */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="card text-center">
-              <div className="text-2xl font-bold text-green-500">{stats.present}</div>
-              <div className="text-xs text-gray-400">Anwesend</div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="card py-4">
+              <p className="text-sm text-fg2">Anwesend</p>
+              <p className="num text-[28px] leading-none font-medium text-fg mt-2">{stats.present}</p>
             </div>
-            <div className="card text-center">
-              <div className="text-2xl font-bold text-red-500">{stats.absent}</div>
-              <div className="text-xs text-gray-400">Abwesend</div>
+            <div className="card py-4">
+              <p className="text-sm text-fg2">Abwesend</p>
+              <p className="num text-[28px] leading-none font-medium text-fg mt-2">{stats.absent}</p>
             </div>
-            <div className="card text-center">
-              <div className="text-2xl font-bold text-blue-500">{Math.round((stats.present / total) * 100)}%</div>
-              <div className="text-xs text-gray-400">Quote</div>
+            <div className="card py-4">
+              <p className="text-sm text-fg2">Quote</p>
+              <p className="num text-[28px] leading-none font-medium text-fg mt-2">{rate}%</p>
             </div>
           </div>
 
           {/* Players Check-In */}
           {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="w-8 h-8 border-4 border-slate-700 border-t-green-500 rounded-full animate-spin"></div>
-            </div>
+            <p className="text-muted py-12 text-center">Lädt …</p>
           ) : (
             <div className="space-y-2">
               {players.map((player) => {
                 const playerStatus = getPlayerAttendance(player.id);
                 return (
-                  <div key={player.id} className="card">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold">
-                          #{player.jerseyNumber} {player.name}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
+                  <div key={player.id} className="card py-3 px-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-[15px] text-fg truncate">
+                        {player.firstName} {player.lastName}
+                      </p>
+                      <div className="flex gap-2 shrink-0">
                         <button
                           onClick={() => toggleAttendance(player.id, 'PRESENT')}
-                          className={`btn btn-small ${
-                            playerStatus === 'PRESENT'
-                              ? 'bg-green-600 text-white'
-                              : 'bg-slate-700 hover:bg-slate-600'
-                          }`}
+                          className={`btn ${playerStatus === 'PRESENT' ? 'btn-primary' : 'btn-secondary'}`}
                         >
-                          🟢 Anwesend
+                          <Check size={16} strokeWidth={1.5} />
+                          Anwesend
                         </button>
                         <button
                           onClick={() => toggleAttendance(player.id, 'ABSENT')}
-                          className={`btn btn-small ${
-                            playerStatus === 'ABSENT'
-                              ? 'bg-red-600 text-white'
-                              : 'bg-slate-700 hover:bg-slate-600'
-                          }`}
+                          className={`btn ${playerStatus === 'ABSENT' ? 'btn-primary' : 'btn-secondary'}`}
                         >
-                          🔴 Abwesend
+                          <X size={16} strokeWidth={1.5} />
+                          Abwesend
                         </button>
                       </div>
                     </div>
@@ -175,7 +163,12 @@ export default function CheckInPage() {
         </>
       )}
 
-      {error && <div className="card bg-red-900 border-red-700 text-red-200">⚠️ {error}</div>}
+      {error && (
+        <div className="flex items-center gap-2 p-4 rounded-lg border border-neg/40 text-neg">
+          <AlertCircle size={16} strokeWidth={1.5} className="shrink-0" />
+          {error}
+        </div>
+      )}
     </div>
   );
 }
