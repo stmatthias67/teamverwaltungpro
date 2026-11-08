@@ -111,89 +111,91 @@ input[type='radio'] {
   cursor: pointer;
 }
 
-/* Buttons: Höhe 36, Radius 8, kein Gleiten */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition-property: background-color, border-color, color, opacity;
-  transition-duration: 150ms;
-  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
+@layer components {
+  /* Buttons: Höhe 36, Radius 8, kein Gleiten */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition-property: background-color, border-color, color, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
 
-.btn:active {
-  transform: scale(0.98);
-}
+  .btn:active {
+    transform: scale(0.98);
+  }
 
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 
-.btn-primary {
-  background-color: rgb(var(--inv));
-  color: rgb(var(--inv-fg));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
+  .btn-primary {
+    background-color: rgb(var(--inv));
+    color: rgb(var(--inv-fg));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
 
-.btn-primary:hover {
-  opacity: 0.9;
-}
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
 
-.btn-secondary {
-  background-color: rgb(var(--raised));
-  border-color: var(--line-strong);
-  color: rgb(var(--fg));
-}
+  .btn-secondary {
+    background-color: rgb(var(--raised));
+    border-color: var(--line-strong);
+    color: rgb(var(--fg));
+  }
 
-.btn-secondary:hover {
-  background-color: rgb(var(--line-strong));
-}
+  .btn-secondary:hover {
+    background-color: rgb(var(--line-strong));
+  }
 
-.btn-danger {
-  background-color: transparent;
-  border-color: var(--line-strong);
-  color: rgb(var(--neg));
-}
+  .btn-danger {
+    background-color: transparent;
+    border-color: var(--line-strong);
+    color: rgb(var(--neg));
+  }
 
-.btn-danger:hover {
-  background-color: rgb(var(--neg) / 0.08);
-}
+  .btn-danger:hover {
+    background-color: rgb(var(--neg) / 0.08);
+  }
 
-/* Karten: Fläche, Hairline, Radius 12 */
-.card {
-  background-color: rgb(var(--card));
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 20px;
-}
+  /* Karten: Fläche, Hairline, Radius 12 */
+  .card {
+    background-color: rgb(var(--card));
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+  }
 
-/* Badges: ruhiger Text statt leuchtender Pillen */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background-color: rgb(var(--raised));
-  color: rgb(var(--fg2));
-  font-size: 12px;
-  font-weight: 500;
-}
+  /* Badges: ruhiger Text statt leuchtender Pillen */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background-color: rgb(var(--raised));
+    color: rgb(var(--fg2));
+    font-size: 12px;
+    font-weight: 500;
+  }
 
-.badge.primary {
-  color: rgb(var(--accent));
-}
+  .badge.primary {
+    color: rgb(var(--accent));
+  }
 
-.badge.danger {
-  color: rgb(var(--neg));
+  .badge.danger {
+    color: rgb(var(--neg));
+  }
 }
 
 /* Scrollbar */

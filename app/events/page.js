@@ -1,9 +1,21 @@
-// app/events/page.js (UPDATED VERSION)
+// app/events/page.js
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { X } from 'lucide-react';
+import { X, Plus, Dumbbell, Flag, Trophy, CalendarDays, Clock, MapPin, Car, AlertCircle } from 'lucide-react';
+
+const TYPE_LABEL = {
+  TRAINING: 'Training',
+  MATCH: 'Spiel',
+  TOURNAMENT: 'Turnier',
+};
+
+const TYPE_ICON = {
+  TRAINING: Dumbbell,
+  MATCH: Flag,
+  TOURNAMENT: Trophy,
+};
 
 export default function EventsPage() {
   const [events, setEvents] = useState([]);
@@ -51,7 +63,7 @@ export default function EventsPage() {
 
   async function handleAddEvent(e) {
     e.preventDefault();
-    
+
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -118,15 +130,6 @@ export default function EventsPage() {
     }
   };
 
-  const getTypeBadge = (type) => {
-    const badges = {
-      TRAINING: { bg: 'bg-blue-900', text: '🏃 Training' },
-      MATCH: { bg: 'bg-red-900', text: '⚽ Spiel' },
-      TOURNAMENT: { bg: 'bg-purple-900', text: '🏆 Turnier' },
-    };
-    return badges[type];
-  };
-
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('de-DE', {
       weekday: 'short',
@@ -143,69 +146,82 @@ export default function EventsPage() {
     });
   };
 
+  const closeModal = () => {
+    setShowModal(false);
+    setFormErrors({});
+  };
+
+  const inputClass = (name) => (formErrors[name] ? 'border-neg' : '');
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-white">⚽ Events</h1>
-          <p className="text-slate-400 mt-1">Training, Spiele und Turniere</p>
+          <h1 className="text-[28px] leading-[1.15] font-medium text-fg">Events</h1>
+          <p className="text-fg2 mt-1">Training, Spiele und Turniere</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn btn-primary"
-        >
-          + Event erstellen
+        <button onClick={() => setShowModal(true)} className="btn btn-primary">
+          <Plus size={16} strokeWidth={1.5} />
+          Event erstellen
         </button>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 bg-red-900/30 border border-red-700 rounded-lg text-red-200">
-          ⚠️ {error}
+        <div className="flex items-center gap-2 p-4 rounded-lg border border-neg/40 text-neg">
+          <AlertCircle size={16} strokeWidth={1.5} className="shrink-0" />
+          {error}
         </div>
       )}
 
       {/* Loading */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-slate-700 border-t-primary rounded-full animate-spin"></div>
-        </div>
+        <p className="text-muted py-12 text-center">Lädt …</p>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {events.length === 0 ? (
-            <div className="card text-center text-slate-400 py-12">
-              Keine Events vorhanden
-            </div>
+            <div className="card text-center text-fg2 py-12">Keine Events vorhanden</div>
           ) : (
             events.map((event) => {
-              const badge = getTypeBadge(event.type);
+              const Icon = TYPE_ICON[event.type] || CalendarDays;
               const isUpcoming = new Date(event.date) > new Date();
-              
+
               return (
-                <Link key={event.id} href={`/events/${event.id}`}>
-                  <div className={`card hover:border-primary cursor-pointer transition ${!isUpcoming ? 'opacity-60' : ''}`}>
-                    <div className="flex items-start gap-4">
-                      <div className="text-3xl">{event.type === 'TRAINING' ? '🏃' : event.type === 'MATCH' ? '⚽' : '🏆'}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-lg font-bold text-white">{event.title}</h3>
-                          <span className={`badge ${badge.bg} text-white text-xs px-2 py-1 rounded`}>
-                            {badge.text.split(' ')[1]}
-                          </span>
-                          {event.isAway && <span className="badge bg-orange-900 text-white text-xs px-2 py-1 rounded">Auswärts</span>}
-                          {!isUpcoming && <span className="text-xs text-slate-500">Vorbei</span>}
-                        </div>
-                        <div className="space-y-1 text-sm text-slate-300">
-                          <p>📅 {formatDate(event.date)} • 🕐 {formatTime(event.date)}</p>
-                          <p>📍 {event.location}</p>
-                          {event.distanceInfo && <p>🚗 {event.distanceInfo}</p>}
-                        </div>
+                <Link
+                  key={event.id}
+                  href={`/events/${event.id}`}
+                  className={`card block transition-colors duration-150 ease-ui hover:bg-raised ${!isUpcoming ? 'opacity-60' : ''}`}
+                >
+                  <div className="flex items-start gap-4">
+                    <Icon size={18} strokeWidth={1.5} className="mt-0.5 shrink-0 text-muted" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-[15px] font-medium text-fg">{event.title}</h3>
+                        <span className="badge">{TYPE_LABEL[event.type]}</span>
+                        {event.isAway && <span className="badge">Auswärts</span>}
+                        {!isUpcoming && <span className="text-xs text-muted">Vorbei</span>}
                       </div>
-                      <div className="text-right text-sm text-slate-400">
-                        {isUpcoming ? 'Kommend' : 'Vorbei'}
+                      <div className="mt-2 space-y-1 text-[13px] text-fg2">
+                        <p className="flex items-center gap-2">
+                          <CalendarDays size={14} strokeWidth={1.5} className="shrink-0 text-muted" />
+                          <span className="num">{formatDate(event.date)}</span>
+                          <Clock size={14} strokeWidth={1.5} className="shrink-0 text-muted ml-1" />
+                          <span className="num">{formatTime(event.date)}</span>
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <MapPin size={14} strokeWidth={1.5} className="shrink-0 text-muted" />
+                          {event.location}
+                        </p>
+                        {event.distanceInfo && (
+                          <p className="flex items-center gap-2">
+                            <Car size={14} strokeWidth={1.5} className="shrink-0 text-muted" />
+                            {event.distanceInfo}
+                          </p>
+                        )}
                       </div>
                     </div>
+                    <span className="text-[13px] text-muted shrink-0">{isUpcoming ? 'Kommend' : 'Vorbei'}</span>
                   </div>
                 </Link>
               );
@@ -218,148 +234,111 @@ export default function EventsPage() {
       {showModal && (
         <div className="modal-overlay">
           <div className="modal max-w-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-white">Event erstellen</h2>
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  setFormErrors({});
-                }}
-                className="text-slate-400 hover:text-white"
-              >
-                <X size={24} />
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-medium text-fg">Event erstellen</h2>
+              <button onClick={closeModal} className="text-muted hover:text-fg transition-colors duration-150 ease-ui" aria-label="Schließen">
+                <X size={18} strokeWidth={1.5} />
               </button>
             </div>
 
             <form onSubmit={handleAddEvent} className="space-y-4">
               {/* Titel */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Titel *</label>
+                <label className="block text-sm text-fg2 mb-1.5">Titel *</label>
                 <input
                   type="text"
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
                   placeholder="z.B. Training Montagsgruppe"
-                  className={formErrors.title ? 'border-red-500' : ''}
+                  className={inputClass('title')}
                 />
-                {formErrors.title && <p className="text-red-400 text-sm mt-1">{formErrors.title}</p>}
+                {formErrors.title && <p className="text-neg text-sm mt-1">{formErrors.title}</p>}
               </div>
 
               {/* Type */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Typ</label>
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleInputChange}
-                >
-                  <option value="TRAINING">🏃 Training</option>
-                  <option value="MATCH">⚽ Spiel</option>
-                  <option value="TOURNAMENT">🏆 Turnier</option>
+                <label className="block text-sm text-fg2 mb-1.5">Typ</label>
+                <select name="type" value={formData.type} onChange={handleInputChange}>
+                  <option value="TRAINING">Training</option>
+                  <option value="MATCH">Spiel</option>
+                  <option value="TOURNAMENT">Turnier</option>
                 </select>
               </div>
 
               {/* Match Type (nur wenn MATCH) */}
               {formData.type === 'MATCH' && (
                 <div>
-                  <label className="block text-sm font-medium text-white mb-2">Spieltyp</label>
-                  <select
-                    name="matchType"
-                    value={formData.matchType}
-                    onChange={handleInputChange}
-                  >
-                    <option value="FRIENDLY">🤝 Freundschaftsspiel</option>
-                    <option value="LEAGUE">🏆 Punktspiel</option>
+                  <label className="block text-sm text-fg2 mb-1.5">Spieltyp</label>
+                  <select name="matchType" value={formData.matchType} onChange={handleInputChange}>
+                    <option value="FRIENDLY">Freundschaftsspiel</option>
+                    <option value="LEAGUE">Punktspiel</option>
                   </select>
                 </div>
               )}
 
               {/* Datum */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Datum *</label>
+                <label className="block text-sm text-fg2 mb-1.5">Datum *</label>
                 <input
                   type="datetime-local"
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
-                  className={formErrors.date ? 'border-red-500' : ''}
+                  className={inputClass('date')}
                 />
-                {formErrors.date && <p className="text-red-400 text-sm mt-1">{formErrors.date}</p>}
+                {formErrors.date && <p className="text-neg text-sm mt-1">{formErrors.date}</p>}
               </div>
 
               {/* Treffzeit */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Treffzeit (optional)</label>
-                <input
-                  type="datetime-local"
-                  name="meetTime"
-                  value={formData.meetTime}
-                  onChange={handleInputChange}
-                  placeholder="Wann sollen sich alle treffen?"
-                />
+                <label className="block text-sm text-fg2 mb-1.5">Treffzeit (optional)</label>
+                <input type="datetime-local" name="meetTime" value={formData.meetTime} onChange={handleInputChange} />
               </div>
 
               {/* Ort */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Ort *</label>
+                <label className="block text-sm text-fg2 mb-1.5">Ort *</label>
                 <input
                   type="text"
                   name="location"
                   value={formData.location}
                   onChange={handleInputChange}
                   placeholder="z.B. Schloßbergplatz"
-                  className={formErrors.location ? 'border-red-500' : ''}
+                  className={inputClass('location')}
                 />
-                {formErrors.location && <p className="text-red-400 text-sm mt-1">{formErrors.location}</p>}
+                {formErrors.location && <p className="text-neg text-sm mt-1">{formErrors.location}</p>}
               </div>
 
               {/* Fahrstrecke */}
               <div>
-                <label className="block text-sm font-medium text-white mb-2">Fahrstrecke (optional)</label>
+                <label className="block text-sm text-fg2 mb-1.5">Fahrstrecke (optional)</label>
                 <input
                   type="text"
                   name="distanceInfo"
                   value={formData.distanceInfo}
                   onChange={handleInputChange}
-                  placeholder="z.B. 15.3 km / 20 Min"
+                  placeholder="z.B. 15,3 km, 20 Min"
                 />
               </div>
 
               {/* Auswärts */}
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="isAway"
-                  checked={formData.isAway}
-                  onChange={handleInputChange}
-                />
-                <span className="text-white text-sm">Auswärts</span>
+              <label className="flex items-center gap-2.5 text-sm text-fg2">
+                <input type="checkbox" name="isAway" checked={formData.isAway} onChange={handleInputChange} />
+                Auswärts
               </label>
 
               {/* Submit Error */}
               {formErrors.submit && (
-                <div className="p-3 bg-red-900/30 border border-red-700 rounded text-red-200 text-sm">
-                  {formErrors.submit}
-                </div>
+                <div className="p-3 rounded-lg border border-neg/40 text-neg text-sm">{formErrors.submit}</div>
               )}
 
               {/* Buttons */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setFormErrors({});
-                  }}
-                  className="flex-1 btn btn-secondary"
-                >
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={closeModal} className="flex-1 btn btn-secondary">
                   Abbrechen
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 btn btn-primary"
-                >
+                <button type="submit" className="flex-1 btn btn-primary">
                   Event erstellen
                 </button>
               </div>

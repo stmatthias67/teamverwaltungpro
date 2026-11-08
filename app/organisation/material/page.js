@@ -4,12 +4,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { X, Pencil, Trash2 } from 'lucide-react';
+import { X, Pencil, Trash2, Minus, Plus, AlertTriangle, Check } from 'lucide-react';
 
 const CONDITION = {
-  GOOD: { label: 'Gut', cls: 'bg-green-900/50 text-green-300 border-green-700' },
-  USED: { label: 'Gebraucht', cls: 'bg-yellow-900/50 text-yellow-300 border-yellow-700' },
-  DAMAGED: { label: 'Beschädigt', cls: 'bg-red-900/50 text-red-300 border-red-700' },
+  GOOD: { label: 'Gut', cls: 'text-pos' },
+  USED: { label: 'Gebraucht', cls: 'text-fg2' },
+  DAMAGED: { label: 'Beschädigt', cls: 'text-neg' },
 };
 
 const EMPTY_ITEM = {
@@ -24,10 +24,16 @@ const EMPTY_ITEM = {
 };
 
 const BORROW_END = [
-  { value: 'RETURNED', label: '✅ Vollständig zurück' },
-  { value: 'DAMAGED', label: '⚠️ Beschädigt zurück' },
-  { value: 'LOST', label: '❌ Verloren' },
+  { value: 'RETURNED', label: 'Vollständig zurück' },
+  { value: 'DAMAGED', label: 'Beschädigt zurück' },
+  { value: 'LOST', label: 'Verloren' },
 ];
+
+const BORROW_STATUS = {
+  RETURNED: { label: 'Zurück', cls: 'text-pos' },
+  DAMAGED: { label: 'Beschädigt', cls: 'text-fg2' },
+  LOST: { label: 'Verloren', cls: 'text-neg' },
+};
 
 export default function MaterialPage() {
   const [items, setItems] = useState([]);
@@ -227,59 +233,68 @@ export default function MaterialPage() {
   const fmt = (d) => (d ? new Date(d).toLocaleDateString('de-DE') : '–');
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-4 border-slate-700 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
+    return <p className="py-12 text-center text-muted">Lädt …</p>;
   }
 
   return (
     <div className="space-y-8">
       {error && (
-        <div className="p-3 bg-red-900/30 border border-red-700 rounded text-red-200 text-sm flex justify-between">
-          <span>⚠️ {error}</span>
-          <button onClick={() => setError(null)} className="hover:text-white">×</button>
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-line bg-raised p-3 text-sm text-neg">
+          <span className="flex items-center gap-2">
+            <AlertTriangle size={16} strokeWidth={1.5} className="shrink-0" />
+            {error}
+          </span>
+          <button type="button" onClick={() => setError(null)} className="text-muted hover:text-fg transition-colors duration-150 ease-ui" aria-label="Meldung schließen">
+            <X size={16} strokeWidth={1.5} />
+          </button>
         </div>
       )}
       {notice && (
-        <div className="p-3 bg-green-900/30 border border-green-700 rounded text-green-200 text-sm flex justify-between">
-          <span>✅ {notice}</span>
-          <button onClick={() => setNotice(null)} className="hover:text-white">×</button>
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-line bg-raised p-3 text-sm text-pos">
+          <span className="flex items-center gap-2">
+            <Check size={16} strokeWidth={1.5} className="shrink-0" />
+            {notice}
+          </span>
+          <button type="button" onClick={() => setNotice(null)} className="text-muted hover:text-fg transition-colors duration-150 ease-ui" aria-label="Meldung schließen">
+            <X size={16} strokeWidth={1.5} />
+          </button>
         </div>
       )}
 
       {/* Kennzahlen */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Soll gesamt" value={summary.soll} />
         <Stat label="Ist gesamt" value={summary.ist} />
-        <Stat label="Fehlt" value={summary.missing} tone={summary.missing ? 'warn' : null} />
+        <Stat label="Fehlt" value={summary.missing} />
         <Stat label="Beschädigt" value={summary.damaged} tone={summary.damaged ? 'bad' : null} />
       </div>
 
       {/* Bestand */}
       <section className="space-y-3">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold text-white">Bestand</h2>
-          <button onClick={openCreateItem} className="btn btn-primary">+ Artikel hinzufügen</button>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-medium text-fg">Bestand</h2>
+          <button type="button" onClick={openCreateItem} className="btn btn-primary">
+            <Plus size={16} strokeWidth={1.5} />
+            Artikel hinzufügen
+          </button>
         </div>
 
         {items.length === 0 ? (
-          <div className="card text-center text-slate-400 py-8">Noch kein Material erfasst</div>
+          <div className="card py-8 text-center text-muted">Noch kein Material erfasst</div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-slate-700">
+          <div className="overflow-x-auto rounded-xl border border-line">
             <table className="w-full text-sm">
-              <thead className="bg-card text-slate-400 text-left">
+              <thead className="text-left text-[13px] text-muted">
                 <tr>
-                  <th className="p-3 font-medium">Artikel</th>
-                  <th className="p-3 font-medium">Kategorie</th>
-                  <th className="p-3 font-medium text-center">Soll</th>
-                  <th className="p-3 font-medium text-center">Ist</th>
-                  <th className="p-3 font-medium">Zustand</th>
-                  <th className="p-3 font-medium">Lagerort</th>
-                  <th className="p-3 font-medium">Letzte Prüfung</th>
-                  <th className="p-3 font-medium">Bemerkung</th>
-                  <th className="p-3 font-medium text-right">Aktionen</th>
+                  <th className="px-3 py-3 font-normal">Artikel</th>
+                  <th className="px-3 py-3 font-normal">Kategorie</th>
+                  <th className="px-3 py-3 text-right font-normal">Soll</th>
+                  <th className="px-3 py-3 text-center font-normal">Ist</th>
+                  <th className="px-3 py-3 font-normal">Zustand</th>
+                  <th className="px-3 py-3 font-normal">Lagerort</th>
+                  <th className="px-3 py-3 font-normal">Letzte Prüfung</th>
+                  <th className="px-3 py-3 font-normal">Bemerkung</th>
+                  <th className="px-3 py-3 text-right font-normal">Aktionen</th>
                 </tr>
               </thead>
               <tbody>
@@ -287,27 +302,55 @@ export default function MaterialPage() {
                   const short = (i.quantity || 0) < (i.shouldQuantity || 0);
                   const cond = CONDITION[i.condition] || CONDITION.GOOD;
                   return (
-                    <tr key={i.id} className="border-t border-slate-700 hover:bg-slate-800/50">
-                      <td className="p-3 font-medium text-white">{i.name}</td>
-                      <td className="p-3 text-slate-300">{i.category}</td>
-                      <td className="p-3 text-center text-slate-300">{i.shouldQuantity ?? 0}</td>
-                      <td className="p-3">
+                    <tr key={i.id} className="border-t border-line transition-colors duration-150 ease-ui hover:bg-raised">
+                      <td className="px-3 py-3 font-medium text-fg">{i.name}</td>
+                      <td className="px-3 py-3 text-fg2">{i.category}</td>
+                      <td className="num px-3 py-3 text-right text-fg2">{i.shouldQuantity ?? 0}</td>
+                      <td className="px-3 py-3">
                         <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => bumpQuantity(i, -1)} className="btn btn-secondary px-2 py-0.5">−</button>
-                          <span className={`font-bold w-8 text-center ${short ? 'text-yellow-400' : 'text-white'}`}>{i.quantity ?? 0}</span>
-                          <button onClick={() => bumpQuantity(i, 1)} className="btn btn-secondary px-2 py-0.5">+</button>
+                          <button
+                            type="button"
+                            onClick={() => bumpQuantity(i, -1)}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-line bg-raised text-fg2 transition-colors duration-150 ease-ui hover:text-fg"
+                            aria-label="Eins abziehen"
+                          >
+                            <Minus size={14} strokeWidth={1.5} />
+                          </button>
+                          <span className={`num w-8 text-center font-medium ${short ? 'text-fg' : 'text-fg2'}`}>{i.quantity ?? 0}</span>
+                          <button
+                            type="button"
+                            onClick={() => bumpQuantity(i, 1)}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-line bg-raised text-fg2 transition-colors duration-150 ease-ui hover:text-fg"
+                            aria-label="Eins hinzufügen"
+                          >
+                            <Plus size={14} strokeWidth={1.5} />
+                          </button>
                         </div>
                       </td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded border text-xs ${cond.cls}`}>{cond.label}</span>
+                      <td className="px-3 py-3">
+                        <span className={`text-[13px] ${cond.cls}`}>{cond.label}</span>
                       </td>
-                      <td className="p-3 text-slate-300">{i.location || '–'}</td>
-                      <td className="p-3 text-slate-300">{fmt(i.lastInspection)}</td>
-                      <td className="p-3 text-slate-400 max-w-[220px] truncate" title={i.notes || ''}>{i.notes || '–'}</td>
-                      <td className="p-3">
+                      <td className="px-3 py-3 text-fg2">{i.location || '–'}</td>
+                      <td className="num px-3 py-3 text-fg2">{fmt(i.lastInspection)}</td>
+                      <td className="max-w-[220px] truncate px-3 py-3 text-muted" title={i.notes || ''}>{i.notes || '–'}</td>
+                      <td className="px-3 py-3">
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => openEditItem(i)} className="btn btn-secondary px-2 py-1" aria-label="Bearbeiten"><Pencil size={14} /></button>
-                          <button onClick={() => setDeleteItem(i)} className="btn btn-danger px-2 py-1" aria-label="Löschen"><Trash2 size={14} /></button>
+                          <button
+                            type="button"
+                            onClick={() => openEditItem(i)}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-line bg-raised text-fg2 transition-colors duration-150 ease-ui hover:text-fg"
+                            aria-label="Bearbeiten"
+                          >
+                            <Pencil size={14} strokeWidth={1.5} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteItem(i)}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-line text-muted transition-colors duration-150 ease-ui hover:text-neg"
+                            aria-label="Löschen"
+                          >
+                            <Trash2 size={14} strokeWidth={1.5} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -321,56 +364,60 @@ export default function MaterialPage() {
 
       {/* Übergabe */}
       <section className="space-y-4">
-        <h2 className="text-xl font-bold text-white">Übergabe an Spieler</h2>
+        <h2 className="text-lg font-medium text-fg">Übergabe an Spieler</h2>
 
         <div className="card space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label>
-              <span className="block text-sm text-slate-400 mb-1">Spieler</span>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-sm text-fg2">Spieler</span>
               <select value={handoverPlayer} onChange={(e) => setHandoverPlayer(e.target.value)}>
-                <option value="">– Spieler wählen –</option>
+                <option value="">Spieler wählen</option>
                 {players.map((p) => (
                   <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
                 ))}
               </select>
             </label>
-            <label>
-              <span className="block text-sm text-slate-400 mb-1">Notiz (optional)</span>
+            <label className="block">
+              <span className="mb-2 block text-sm text-fg2">Notiz (optional)</span>
               <input value={handoverNote} onChange={(e) => setHandoverNote(e.target.value)} placeholder="z.B. Trikotsatz Heim, Gr. 128" />
             </label>
           </div>
 
           <div>
-            <span className="block text-sm text-slate-400 mb-2">Artikel</span>
+            <span className="mb-2 block text-sm text-fg2">Artikel</span>
             {items.length === 0 ? (
-              <p className="text-sm text-slate-500">Zuerst Artikel im Bestand anlegen.</p>
+              <p className="text-sm text-muted">Zuerst Artikel im Bestand anlegen</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {items.map((i) => (
-                  <label
-                    key={i.id}
-                    className={`flex items-center gap-3 p-2 rounded-md border cursor-pointer transition ${
-                      handoverItems.includes(i.id) ? 'border-primary bg-primary/10' : 'border-slate-700 hover:border-slate-500'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={handoverItems.includes(i.id)}
-                      onChange={() => toggleHandoverItem(i.id)}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm text-white">{i.name}</span>
-                    <span className="ml-auto text-xs text-slate-500">{i.quantity ?? 0} am Lager</span>
-                  </label>
-                ))}
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {items.map((i) => {
+                  const selected = handoverItems.includes(i.id);
+                  return (
+                    <label
+                      key={i.id}
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors duration-150 ease-ui ${
+                        selected ? 'border-fg/30 bg-raised' : 'border-line hover:bg-raised'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => toggleHandoverItem(i.id)}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-fg">{i.name}</span>
+                      <span className="num ml-auto text-[13px] text-muted">{i.quantity ?? 0} am Lager</span>
+                    </label>
+                  );
+                })}
               </div>
             )}
           </div>
 
           <button
+            type="button"
             onClick={handOver}
             disabled={!handoverPlayer || handoverItems.length === 0}
-            className="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn btn-primary"
           >
             Übergeben ({handoverItems.length})
           </button>
@@ -378,20 +425,21 @@ export default function MaterialPage() {
 
         {/* Aktive Übergaben */}
         <div className="space-y-2">
-          <h3 className="font-semibold text-white">Aktuell beim Spieler ({activeBorrows.length})</h3>
+          <h3 className="font-medium text-fg">Aktuell beim Spieler ({activeBorrows.length})</h3>
           {activeBorrows.length === 0 ? (
-            <div className="card text-center text-slate-400 py-6">Keine offenen Übergaben</div>
+            <div className="card py-6 text-center text-muted">Keine offenen Übergaben</div>
           ) : (
             activeBorrows.map((b) => (
-              <div key={b.id} className="card flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-                <div>
-                  <div className="font-semibold text-white">{b.player?.firstName} {b.player?.lastName}</div>
-                  <div className="text-sm text-slate-300">{b.item?.name}</div>
-                  <div className="text-xs text-slate-500">seit {fmt(b.borrowedAt)}{b.notes ? ` · ${b.notes}` : ''}</div>
+              <div key={b.id} className="card flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div className="space-y-1">
+                  <div className="font-medium text-fg">{b.player?.firstName} {b.player?.lastName}</div>
+                  <div className="text-sm text-fg2">{b.item?.name}</div>
+                  <div className="text-[13px] text-muted">seit {fmt(b.borrowedAt)}{b.notes ? ` · ${b.notes}` : ''}</div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => { setEndForm({ status: 'RETURNED', notes: '' }); setEndBorrow(b); }}
-                  className="btn btn-primary"
+                  className="btn btn-secondary"
                 >
                   Beenden
                 </button>
@@ -403,24 +451,21 @@ export default function MaterialPage() {
         {/* Historie */}
         {history.length > 0 && (
           <div className="space-y-2">
-            <h3 className="font-semibold text-slate-400">Verlauf (letzte 30)</h3>
-            <div className="space-y-1 text-sm">
-              {history.map((b) => (
-                <div key={b.id} className="flex flex-wrap gap-2 items-center py-2 border-b border-slate-800">
-                  <span className="text-slate-300">{b.player?.firstName} {b.player?.lastName}</span>
-                  <span className="text-slate-500">·</span>
-                  <span className="text-slate-300">{b.item?.name}</span>
-                  <span className="text-slate-500 text-xs">{fmt(b.borrowedAt)} → {fmt(b.returnedAt)}</span>
-                  <span className={`ml-auto text-xs px-2 py-0.5 rounded ${
-                    b.status === 'RETURNED' ? 'bg-green-900/50 text-green-300'
-                      : b.status === 'DAMAGED' ? 'bg-yellow-900/50 text-yellow-300'
-                        : 'bg-red-900/50 text-red-300'
-                  }`}>
-                    {b.status === 'RETURNED' ? 'Zurück' : b.status === 'DAMAGED' ? 'Beschädigt' : 'Verloren'}
-                  </span>
-                  {b.notes && <span className="w-full text-xs text-slate-400 italic">📝 {b.notes}</span>}
-                </div>
-              ))}
+            <h3 className="font-medium text-muted">Verlauf (letzte 30)</h3>
+            <div className="text-sm">
+              {history.map((b) => {
+                const st = BORROW_STATUS[b.status] || BORROW_STATUS.LOST;
+                return (
+                  <div key={b.id} className="flex flex-wrap items-center gap-2 border-b border-line py-3">
+                    <span className="text-fg">{b.player?.firstName} {b.player?.lastName}</span>
+                    <span className="text-muted">·</span>
+                    <span className="text-fg2">{b.item?.name}</span>
+                    <span className="num text-[13px] text-muted">{fmt(b.borrowedAt)} → {fmt(b.returnedAt)}</span>
+                    <span className={`ml-auto text-[13px] ${st.cls}`}>{st.label}</span>
+                    {b.notes && <span className="w-full text-[13px] text-fg2">{b.notes}</span>}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -430,15 +475,15 @@ export default function MaterialPage() {
       {itemModal && (
         <div className="modal-overlay" onClick={() => !saving && setItemModal(null)}>
           <div className="modal max-w-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-white">{itemModal.mode === 'edit' ? 'Artikel bearbeiten' : 'Artikel hinzufügen'}</h2>
-              <button onClick={() => setItemModal(null)} className="text-slate-400 hover:text-white" aria-label="Schließen"><X size={22} /></button>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-medium text-fg">{itemModal.mode === 'edit' ? 'Artikel bearbeiten' : 'Artikel hinzufügen'}</h2>
+              <button type="button" onClick={() => setItemModal(null)} className="text-muted transition-colors duration-150 ease-ui hover:text-fg" aria-label="Schließen"><X size={20} strokeWidth={1.5} /></button>
             </div>
 
             <form onSubmit={saveItem} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Artikel *"><input value={itemForm.name} onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })} placeholder="z.B. Trikotsatz Heim Rot" /></Field>
-                <Field label="Kategorie *"><input value={itemForm.category} onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })} placeholder="Trikot, Hose, Socken …" /></Field>
+                <Field label="Kategorie *"><input value={itemForm.category} onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })} placeholder="Trikot, Hose, Socken" /></Field>
                 <Field label="Anzahl Soll"><input type="number" min="0" value={itemForm.shouldQuantity} onChange={(e) => setItemForm({ ...itemForm, shouldQuantity: e.target.value })} /></Field>
                 <Field label="Anzahl Ist"><input type="number" min="0" value={itemForm.quantity} onChange={(e) => setItemForm({ ...itemForm, quantity: e.target.value })} /></Field>
                 <Field label="Zustand">
@@ -455,11 +500,11 @@ export default function MaterialPage() {
                 <textarea rows="3" value={itemForm.notes} onChange={(e) => setItemForm({ ...itemForm, notes: e.target.value })} />
               </Field>
 
-              {itemError && <div className="p-3 bg-red-900/30 border border-red-700 rounded text-red-200 text-sm">{itemError}</div>}
+              {itemError && <div className="rounded-lg border border-line bg-raised p-3 text-sm text-neg">{itemError}</div>}
 
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setItemModal(null)} className="flex-1 btn btn-secondary" disabled={saving}>Abbrechen</button>
-                <button type="submit" className="flex-1 btn btn-primary" disabled={saving}>{saving ? 'Speichert…' : 'Speichern'}</button>
+                <button type="button" onClick={() => setItemModal(null)} className="btn btn-secondary flex-1" disabled={saving}>Abbrechen</button>
+                <button type="submit" className="btn btn-primary flex-1" disabled={saving}>{saving ? 'Speichert …' : 'Speichern'}</button>
               </div>
             </form>
           </div>
@@ -470,8 +515,8 @@ export default function MaterialPage() {
       {endBorrow && (
         <div className="modal-overlay" onClick={() => setEndBorrow(null)}>
           <div className="modal max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold text-white mb-1">Übergabe beenden</h2>
-            <p className="text-sm text-slate-300 mb-4">
+            <h2 className="mb-1 text-xl font-medium text-fg">Übergabe beenden</h2>
+            <p className="mb-4 text-sm text-fg2">
               {endBorrow.player?.firstName} {endBorrow.player?.lastName} · {endBorrow.item?.name}
             </p>
             <form onSubmit={finishBorrow} className="space-y-4">
@@ -484,8 +529,8 @@ export default function MaterialPage() {
                 <textarea rows="3" value={endForm.notes} onChange={(e) => setEndForm({ ...endForm, notes: e.target.value })} placeholder="z.B. Naht am Ärmel offen" />
               </Field>
               <div className="flex gap-3">
-                <button type="button" onClick={() => setEndBorrow(null)} className="flex-1 btn btn-secondary">Abbrechen</button>
-                <button type="submit" className="flex-1 btn btn-primary">Bestätigen</button>
+                <button type="button" onClick={() => setEndBorrow(null)} className="btn btn-secondary flex-1">Abbrechen</button>
+                <button type="submit" className="btn btn-primary flex-1">Bestätigen</button>
               </div>
             </form>
           </div>
@@ -496,11 +541,11 @@ export default function MaterialPage() {
       {deleteItem && (
         <div className="modal-overlay" onClick={() => setDeleteItem(null)}>
           <div className="modal max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold text-white mb-2">Artikel löschen?</h2>
-            <p className="text-slate-300 mb-6">„{deleteItem.name}“ wird aus dem Bestand entfernt.</p>
+            <h2 className="mb-2 text-xl font-medium text-fg">Artikel löschen?</h2>
+            <p className="mb-6 text-fg2">„{deleteItem.name}“ wird aus dem Bestand entfernt.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteItem(null)} className="flex-1 btn btn-secondary">Abbrechen</button>
-              <button onClick={confirmDeleteItem} className="flex-1 btn btn-danger">Löschen</button>
+              <button type="button" onClick={() => setDeleteItem(null)} className="btn btn-secondary flex-1">Abbrechen</button>
+              <button type="button" onClick={confirmDeleteItem} className="btn btn-danger flex-1">Löschen</button>
             </div>
           </div>
         </div>
@@ -510,11 +555,11 @@ export default function MaterialPage() {
 }
 
 function Stat({ label, value, tone }) {
-  const color = tone === 'bad' ? 'text-red-400' : tone === 'warn' ? 'text-yellow-400' : 'text-white';
+  const color = tone === 'bad' ? 'text-neg' : 'text-fg';
   return (
     <div className="card">
-      <div className="text-xs text-slate-400">{label}</div>
-      <div className={`text-2xl font-bold ${color}`}>{value}</div>
+      <div className="text-[13px] text-muted">{label}</div>
+      <div className={`num mt-2 text-[28px] font-medium leading-none ${color}`}>{value}</div>
     </div>
   );
 }
@@ -522,7 +567,7 @@ function Stat({ label, value, tone }) {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <span className="block text-sm font-medium text-white mb-2">{label}</span>
+      <span className="mb-2 block text-sm text-fg2">{label}</span>
       {children}
     </label>
   );

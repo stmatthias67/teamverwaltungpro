@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Play, Pause, RotateCcw } from 'lucide-react';
 
 export default function TacticsPage() {
   const [formation, setFormation] = useState('4-3-3');
@@ -57,88 +58,85 @@ export default function TacticsPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="text-4xl font-bold mb-2">👕 Taktik & Aufstellung</h1>
-        <p className="text-gray-400">Visualisierung und Planung von Aufstellungen</p>
+        <h1 className="text-[28px] md:text-[32px] leading-[1.15] font-medium text-fg mb-1">Taktik & Aufstellung</h1>
+        <p className="text-fg2">Visualisierung und Planung von Aufstellungen</p>
       </div>
 
       {/* Controls */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-semibold mb-2">Spielfeld:</label>
-          <select value={fieldType} onChange={(e) => setFieldType(e.target.value)} className="input-field">
+        <label className="block">
+          <span className="block text-[13px] text-fg2 mb-1.5">Spielfeld</span>
+          <select value={fieldType} onChange={(e) => setFieldType(e.target.value)}>
             {fieldTypes.map((ft) => (
               <option key={ft.value} value={ft.value}>
                 {ft.label}
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className="block text-sm font-semibold mb-2">Formation:</label>
-          <select value={formation} onChange={(e) => setFormation(e.target.value)} className="input-field">
+        </label>
+        <label className="block">
+          <span className="block text-[13px] text-fg2 mb-1.5">Formation</span>
+          <select value={formation} onChange={(e) => setFormation(e.target.value)}>
             {formations.map((f) => (
               <option key={f} value={f}>
                 {f}
               </option>
             ))}
           </select>
-        </div>
+        </label>
       </div>
 
       {/* Field Visualization */}
-      <div className="card bg-green-900 border-green-700 p-8">
-        <div className="aspect-video bg-gradient-to-b from-green-700 to-green-800 rounded-lg border-4 border-white flex items-center justify-center relative overflow-hidden">
+      <div className="card p-4 md:p-6">
+        <div className="relative aspect-video overflow-hidden rounded-xl bg-[#24422f] flex items-center justify-center">
           {/* Field Lines */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-full h-full flex flex-col items-center justify-center">
-              {/* Center Line */}
-              <div className="absolute w-full h-0.5 bg-white"></div>
-              {/* Center Circle */}
-              <div className="absolute w-24 h-24 border-2 border-white rounded-full"></div>
-            </div>
-          </div>
+          <div className="absolute inset-4 border border-white/70 rounded-sm" />
+          <div className="absolute left-4 right-4 top-1/2 h-px bg-white/70" />
+          <div className="absolute left-1/2 top-1/2 w-24 h-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/70" />
 
           {/* Players */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="grid grid-cols-3 gap-8">
               {players.slice(0, 11).map((player) => (
                 <div key={player.id} className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-yellow-300">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-fg text-bg flex items-center justify-center num text-[13px] font-medium">
                     {player.jerseyNumber}
                   </div>
-                  <div className="text-white text-xs font-semibold text-center">{player.name.split(' ')[0]}</div>
+                  <div className="text-white/90 text-[12px] text-center">{player.name.split(' ')[0]}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Formation Text */}
-          <div className="absolute top-4 right-4 bg-white bg-opacity-90 px-3 py-2 rounded text-sm font-bold text-green-900">
+          <div className="absolute top-3 right-3 rounded-md bg-deep/80 px-2.5 py-1 text-[13px] num text-fg">
             {formation}
           </div>
         </div>
       </div>
 
       {/* Match Timer */}
-      <div className="card bg-blue-900 border-blue-700">
-        <h3 className="text-lg font-bold mb-4">⏱️ Match-Timer</h3>
-        <div className="flex items-center gap-4">
-          <div className="text-4xl font-mono font-bold text-blue-400">{formatTime(timerSeconds)}</div>
+      <div className="card">
+        <h3 className="text-[15px] font-medium text-fg2 mb-4">Match-Timer</h3>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="text-[32px] leading-none num font-medium text-fg">{formatTime(timerSeconds)}</div>
           <div className="flex gap-2">
             <button
               onClick={() => setIsTimerRunning(!isTimerRunning)}
-              className={`btn ${isTimerRunning ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white`}
+              className={isTimerRunning ? 'btn btn-secondary' : 'btn btn-primary'}
             >
-              {isTimerRunning ? '⏸ Pause' : '▶ Start'}
+              {isTimerRunning ? <Pause size={16} strokeWidth={1.5} /> : <Play size={16} strokeWidth={1.5} />}
+              {isTimerRunning ? 'Pause' : 'Start'}
             </button>
             <button
               onClick={() => {
                 setTimerSeconds(0);
                 setIsTimerRunning(false);
               }}
-              className="btn bg-slate-700 hover:bg-slate-600 text-white"
+              className="btn btn-secondary"
             >
-              🔄 Reset
+              <RotateCcw size={16} strokeWidth={1.5} />
+              Reset
             </button>
           </div>
         </div>
@@ -147,30 +145,30 @@ export default function TacticsPage() {
       {/* Substitutions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card">
-          <h3 className="text-lg font-bold mb-4">Auf dem Platz</h3>
-          <div className="space-y-2">
+          <h3 className="text-[15px] font-medium text-fg2 mb-4">Auf dem Platz</h3>
+          <div className="space-y-1.5">
             {loading ? (
-              <p className="text-gray-400">Lädt...</p>
+              <p className="text-muted">Lädt …</p>
             ) : (
               players.slice(0, 11).map((p) => (
-                <div key={p.id} className="flex items-center gap-2 p-2 bg-slate-700 rounded">
-                  <span className="font-bold w-8">#{p.jerseyNumber}</span>
-                  <span>{p.name}</span>
+                <div key={p.id} className="flex items-center gap-3 h-9 px-3 rounded-lg bg-raised">
+                  <span className="num text-muted w-8">#{p.jerseyNumber}</span>
+                  <span className="text-fg">{p.name}</span>
                 </div>
               ))
             )}
           </div>
         </div>
         <div className="card">
-          <h3 className="text-lg font-bold mb-4">Ersatzbank</h3>
-          <div className="space-y-2">
+          <h3 className="text-[15px] font-medium text-fg2 mb-4">Ersatzbank</h3>
+          <div className="space-y-1.5">
             {loading ? (
-              <p className="text-gray-400">Lädt...</p>
+              <p className="text-muted">Lädt …</p>
             ) : (
               players.slice(11).map((p) => (
-                <div key={p.id} className="flex items-center gap-2 p-2 bg-slate-700 rounded">
-                  <span className="font-bold w-8">#{p.jerseyNumber}</span>
-                  <span>{p.name}</span>
+                <div key={p.id} className="flex items-center gap-3 h-9 px-3 rounded-lg bg-raised">
+                  <span className="num text-muted w-8">#{p.jerseyNumber}</span>
+                  <span className="text-fg">{p.name}</span>
                 </div>
               ))
             )}
