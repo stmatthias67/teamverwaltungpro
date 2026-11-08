@@ -13,31 +13,18 @@ import { useEffect, useState } from 'react';
 import { RotateCcw, Save, Check, AlertTriangle } from 'lucide-react';
 import { applyTheme, saveTheme } from '@/lib/theme';
 
+// Vorlagen setzen nur die Primärfarbe, das ist die einzige Farbe, die die Oberfläche nutzt
 const PRESETS = {
-  green: {
-    name: 'Grün (SV Schloßberg)',
-    primaryColor: '#2ea043',
-    secondaryColor: '#1f6feb',
-    accentColor: '#58a6ff',
-  },
-  blue: {
-    name: 'Blau',
-    primaryColor: '#1f6feb',
-    secondaryColor: '#2ea043',
-    accentColor: '#58a6ff',
-  },
-  red: {
-    name: 'Rot',
-    primaryColor: '#da3633',
-    secondaryColor: '#1f6feb',
-    accentColor: '#58a6ff',
-  },
-  purple: {
-    name: 'Lila',
-    primaryColor: '#a371f7',
-    secondaryColor: '#1f6feb',
-    accentColor: '#79c0ff',
-  },
+  green: { name: 'Grün (SV Schloßberg)', primaryColor: '#2ea043' },
+  blue: { name: 'Blau', primaryColor: '#1f6feb' },
+  red: { name: 'Rot', primaryColor: '#da3633' },
+  orange: { name: 'Orange', primaryColor: '#e0701b' },
+  yellow: { name: 'Gelb', primaryColor: '#d4a017' },
+  teal: { name: 'Türkis', primaryColor: '#0d9488' },
+  petrol: { name: 'Petrol', primaryColor: '#0e7490' },
+  purple: { name: 'Lila', primaryColor: '#8b5cf6' },
+  pink: { name: 'Pink', primaryColor: '#db2777' },
+  brown: { name: 'Braun', primaryColor: '#92400e' },
 };
 
 const MODE_LABEL = { LIGHT: 'Hell', DARK: 'Dunkel', SYSTEM: 'System' };
@@ -153,8 +140,6 @@ export default function SettingsPage() {
     setSettings((prev) => ({
       ...prev,
       primaryColor: preset.primaryColor,
-      secondaryColor: preset.secondaryColor,
-      accentColor: preset.accentColor,
     }));
     setUnsavedChanges(true);
   }
@@ -254,9 +239,7 @@ export default function SettingsPage() {
               >
                 <span>{preset.name}</span>
                 <span className="flex gap-1.5">
-                  {[preset.primaryColor, preset.secondaryColor, preset.accentColor].map((c) => (
-                    <span key={c} className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: c }} />
-                  ))}
+                  <span className="w-4 h-4 rounded-full" style={{ backgroundColor: preset.primaryColor }} />
                 </span>
               </button>
             );
@@ -266,11 +249,9 @@ export default function SettingsPage() {
 
       {/* CUSTOM COLORS */}
       <section className={sectionClass}>
-        <h2 className={sectionTitle}>Eigene Farben</h2>
+        <h2 className={sectionTitle}>Eigene Farbe</h2>
         {[
-          { field: 'primaryColor', label: 'Primärfarbe', placeholder: '#2ea043' },
-          { field: 'secondaryColor', label: 'Sekundärfarbe', placeholder: '#1f6feb' },
-          { field: 'accentColor', label: 'Akzentfarbe', placeholder: '#58a6ff' },
+          { field: 'primaryColor', label: 'Eigene Farbe', placeholder: '#2ea043' },
         ].map(({ field, label, placeholder }) => (
           <div key={field}>
             <label className="block text-sm text-fg2 mb-1.5">{label}</label>
