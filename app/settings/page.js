@@ -3,14 +3,15 @@
  * Einstellungen
  * - Farbmodus: Hell, Dunkel, System (wirkt sofort und wird gespeichert)
  * - Layout-Stil
- * - Farbauswahl (Vorlagen und Einzelfarben) bleibt im Code, wird aber vorerst nicht
- *   auf die Oberfläche angewendet
+ * - Farbauswahl: Die Primärfarbe wird als Akzent in der Oberfläche verwendet.
+ *   Flächen bleiben neutral.
  */
 
 'use client';
 
 import { useEffect, useState } from 'react';
 import { RotateCcw, Save, Check, AlertTriangle } from 'lucide-react';
+import { applyTheme, saveTheme } from '@/lib/theme';
 
 const PRESETS = {
   green: {
@@ -57,7 +58,7 @@ export default function SettingsPage() {
   // Apply theme when settings change
   useEffect(() => {
     if (settings) {
-      applyTheme(settings);
+      applyThemeSettings(settings);
     }
   }, [settings]);
 
@@ -78,28 +79,9 @@ export default function SettingsPage() {
     }
   }
 
-  function applyTheme(theme) {
-    if (typeof window === 'undefined') return;
-
-    const root = document.documentElement;
-
-    // Setze Dark/Light Mode
-    const useDark =
-      theme.colorMode === 'DARK' ||
-      (theme.colorMode === 'SYSTEM' && prefersColorSchemeDark());
-    root.classList.toggle('light', !useDark);
-    root.classList.toggle('dark', useDark);
-
-    // Speichere in localStorage für Persistierung
-    try {
-      localStorage.setItem('themeSettings', JSON.stringify(theme));
-    } catch {
-      // Speicher nicht verfügbar
-    }
-  }
-
-  function prefersColorSchemeDark() {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  function applyThemeSettings(theme) {
+    applyTheme(theme);
+    saveTheme(theme);
   }
 
   async function handleSaveSettings() {

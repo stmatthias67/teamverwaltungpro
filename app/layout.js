@@ -4,6 +4,7 @@ import './globals.css';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { readTheme, saveTheme, applyTheme } from '@/lib/theme';
 import { Users, Package, CalendarDays, LayoutDashboard, Settings, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Haupttabs: Untertabs liegen in den jeweiligen Layouts (teammanagement/, organisation/)
@@ -19,50 +20,22 @@ const EXTRA_LINKS = [
   { href: '/settings', label: 'Einstellungen', Icon: Settings },
 ];
 
-const SETTINGS_KEY = 'themeSettings';
-
-function readStoredMode() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-    return stored.colorMode || 'DARK';
-  } catch {
-    return 'DARK';
-  }
-}
-
-function applyMode(mode) {
-  const root = document.documentElement;
-  const isLight =
-    mode === 'LIGHT' || (mode === 'SYSTEM' && window.matchMedia('(prefers-color-scheme: light)').matches);
-  root.classList.toggle('light', isLight);
-  root.classList.toggle('dark', !isLight);
-}
-
-function saveMode(mode) {
-  try {
-    const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...stored, colorMode: mode }));
-  } catch {
-    // Speicher nicht verfügbar: Theme gilt nur für diese Sitzung
-  }
-}
-
 export default function RootLayout({ children }) {
   const pathname = usePathname() || '/';
   const [collapsed, setCollapsed] = useState(false);
   const [mode, setMode] = useState('DARK');
 
   useEffect(() => {
-    const stored = readStoredMode();
-    setMode(stored);
-    applyMode(stored);
+    const theme = readTheme();
+    setMode(theme.colorMode || 'DARK');
+    applyTheme(theme);
   }, []);
 
   function toggleMode() {
     const next = document.documentElement.classList.contains('light') ? 'DARK' : 'LIGHT';
+    const theme = saveTheme({ colorMode: next });
     setMode(next);
-    saveMode(next);
-    applyMode(next);
+    applyTheme(theme);
   }
 
   const isActive = (match) => pathname.startsWith(match);
